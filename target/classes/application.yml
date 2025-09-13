@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: marketplace-helper
+  
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.marketplacehelper: DEBUG
+    org.springframework.web: DEBUG
+
+# Конфигурация WB API
+wb:
+  api:
+    token: ${WB_API_TOKEN:}  # Токен из переменной окружения
+    base-url: https://marketplace-api.wildberries.ru
+    timeout: 30000  # 30 секунд
