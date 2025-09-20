@@ -12,6 +12,7 @@ D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\auth\SimpleAuthService.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\ProductValidationDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\DemoController.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\UpdateCostsRequest.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\WbApiEndpointStatus.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\ProductController.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\WbApiStatusReportDto.java

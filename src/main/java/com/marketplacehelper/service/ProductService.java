@@ -54,6 +54,21 @@ public class ProductService {
                 })
                 .orElseThrow(() -> new RuntimeException("Товар с ID " + id + " не найден"));
     }
+
+    public Product updateProductCosts(Long id, java.math.BigDecimal purchase,
+                                      java.math.BigDecimal logistics,
+                                      java.math.BigDecimal marketing,
+                                      java.math.BigDecimal other) {
+        return productRepository.findById(id)
+                .map(product -> {
+                    if (purchase != null) product.setPurchasePrice(purchase);
+                    if (logistics != null) product.setLogisticsCost(logistics);
+                    if (marketing != null) product.setMarketingCost(marketing);
+                    if (other != null) product.setOtherExpenses(other);
+                    return productRepository.save(product);
+                })
+                .orElseThrow(() -> new RuntimeException("Товар с ID " + id + " не найден"));
+    }
     
     public void deleteProduct(Long id) {
         productRepository.deleteById(id);

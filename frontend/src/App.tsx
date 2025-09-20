@@ -854,6 +854,24 @@ function WhatIfForm({ base, onClose, compute }: { base: ProductAnalytics; onClos
       </div>
       <div className="modal__footer">
         <button className="btn btn--secondary" onClick={onClose}>Закрыть</button>
+        {base.productId && (
+          <button
+            className="btn"
+            onClick={async () => {
+              try {
+                await axios.patch(`/api/products/${base.productId}/costs`, {
+                  purchasePrice: purchase === '' ? null : Number(purchase),
+                  logisticsCost: logistics === '' ? null : Number(logistics),
+                  marketingCost: marketing === '' ? null : Number(marketing),
+                  otherExpenses: other === '' ? null : Number(other)
+                });
+                onClose();
+                // naive refresh after apply
+                window.location.hash.includes('/analytics') ? undefined : undefined;
+              } catch (e) {}
+            }}
+          >Применить</button>
+        )}
       </div>
     </div>
   );

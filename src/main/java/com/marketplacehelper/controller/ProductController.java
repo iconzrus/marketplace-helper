@@ -1,6 +1,7 @@
 package com.marketplacehelper.controller;
 
 import com.marketplacehelper.model.Product;
+import com.marketplacehelper.dto.UpdateCostsRequest;
 import com.marketplacehelper.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,6 +93,17 @@ public class ProductController {
     public ResponseEntity<List<Product>> getLowStockProducts(@RequestParam(defaultValue = "10") Integer threshold) {
         List<Product> products = productService.getLowStockProducts(threshold);
         return ResponseEntity.ok(products);
+    }
+
+    @PatchMapping("/{id}/costs")
+    public ResponseEntity<Product> updateCosts(@PathVariable Long id, @RequestBody UpdateCostsRequest body) {
+        try {
+            Product updated = productService.updateProductCosts(
+                    id, body.getPurchasePrice(), body.getLogisticsCost(), body.getMarketingCost(), body.getOtherExpenses());
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
 
