@@ -114,6 +114,22 @@ const App = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const pageSize = 10;
+  const [wbStatuses, setWbStatuses] = useState<{ name: string; path: string; status: 'UP' | 'DOWN'; httpStatus?: number; message?: string }[] | null>(null);
+  const [wbStatusLoading, setWbStatusLoading] = useState(false);
+
+  const fetchWbStatuses = async () => {
+    if (!authToken) return;
+    setWbStatusLoading(true);
+    try {
+      const { data } = await axios.get<{ checkedAt: string; endpoints: typeof wbStatuses }>('/api/wb-status');
+      setWbStatuses(data.endpoints ?? []);
+    } catch (err) {
+      console.error(err);
+      setWbStatuses(null);
+    } finally {
+      setWbStatusLoading(false);
+    }
+  };
 
   const handleLogout = useCallback((message?: string) => {
     setAuthToken(null);
@@ -286,6 +302,7 @@ const App = () => {
     }
     fetchAnalytics();
     fetchWbProducts();
+    fetchWbStatuses();
   }, [authToken]);
 
   useEffect(() => {
@@ -576,6 +593,45 @@ const App = () => {
                 <li key={index}>{warning}</li>
               ))}
             </ul>
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <div className="panel__title">
+          <h2>Состояние API Wildberries</h2>
+          <button className="btn btn--secondary" onClick={fetchWbStatuses} disabled={wbStatusLoading}>
+            {wbStatusLoading ? 'Проверка…' : 'Обновить статусы'}
+          </button>
+        </div>
+        {!wbStatuses ? (
+          <div className="message message--info">Нет данных. Нажмите «Обновить статусы».</div>
+        ) : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Эндпоинт</th>
+                  <th>Путь</th>
+                  <th>Статус</th>
+                  <th>HTTP</th>
+                  <th>Сообщение</th>
+                </tr>
+              </thead>
+              <tbody>
+                {wbStatuses.map((s, i) => (
+                  <tr key={`${s.path}-${i}`}>
+                    <td>{s.name}</td>
+                    <td><code>{s.path}</code></td>
+                    <td>
+                      <span className={`badge ${s.status === 'UP' ? '' : 'badge--attention'}`}>{s.status}</span>
+                    </td>
+                    <td className="numeric">{s.httpStatus ?? '—'}</td>
+                    <td>{s.message ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>

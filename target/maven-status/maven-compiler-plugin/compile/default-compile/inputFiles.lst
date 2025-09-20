@@ -4,9 +4,13 @@ D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\auth
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\model\WbProduct.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\service\WbApiService.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\ProductImportController.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\service\WbApiStatusService.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\WbApiStatusController.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\ProductDataSource.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\auth\SimpleAuthService.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\WbApiEndpointStatus.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\ProductController.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\WbApiStatusReportDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\HealthController.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\service\AnalyticsService.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\service\WbProductService.java
