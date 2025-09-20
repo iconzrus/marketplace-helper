@@ -70,6 +70,25 @@ class AnalyticsServiceTest {
         assertThat(mergedReport.getRequiresAttention()).isEmpty();
     }
 
+    @Test
+    void shouldNotDuplicateWildberriesCardWhenArticleContainsLeadingZeros() {
+        WbProduct wbProduct = buildFishingCover();
+        wbProductRepository.saveAndFlush(wbProduct);
+
+        Product excelProduct = buildExcelProduct();
+        excelProduct.setWbArticle("00186961443");
+        productRepository.saveAndFlush(excelProduct);
+
+        AnalyticsReportDto report = analyticsService.buildProductAnalyticsReport(true, null, true);
+
+        assertThat(report.getAllItems()).hasSize(1);
+        ProductAnalyticsDto dto = report.getAllItems().get(0);
+        assertThat(dto.getDataSource()).isEqualTo(ProductDataSource.MERGED);
+        assertThat(dto.isRequiresCorrection()).isFalse();
+        assertThat(dto.isProfitable()).isTrue();
+        assertThat(report.getRequiresAttention()).isEmpty();
+    }
+
     private WbProduct buildFishingCover() {
         WbProduct wbProduct = new WbProduct();
         wbProduct.setNmId(186961443L);
