@@ -65,8 +65,23 @@ public class ProductImportService {
                     continue;
                 }
 
-                String name = getString(row, headerMap, formatter, "name", "название", "товар");
-                String wbArticle = getString(row, headerMap, formatter, "wb_article", "артикулwb", "артикул");
+                String name = getString(row, headerMap, formatter,
+                        "name", "название", "товар", "наименование");
+
+                String wbArticle = getString(row, headerMap, formatter,
+                        "wb_article", "артикулwb", "артикул");
+                if (wbArticle == null || wbArticle.isBlank()) {
+                    wbArticle = getString(row, headerMap, formatter,
+                            "кодноменклатуры", "nm_id", "nmid", "кодтовара", "номенклатура");
+                }
+                if (wbArticle == null || wbArticle.isBlank()) {
+                    wbArticle = getString(row, headerMap, formatter,
+                            "артикулпоставщика", "supplierarticle", "поставщикаартикул");
+                }
+                if (wbArticle == null || wbArticle.isBlank()) {
+                    wbArticle = getString(row, headerMap, formatter,
+                            "srid", "корзина", "idкорзинызаказа");
+                }
                 if ((name == null || name.isBlank()) && (wbArticle == null || wbArticle.isBlank())) {
                     // пустая строка
                     skipped++;
@@ -83,11 +98,16 @@ public class ProductImportService {
                 }
 
                 product.setName(Optional.ofNullable(name).orElse(product.getName()));
-                product.setWbArticle(wbArticle);
-                product.setWbBarcode(getString(row, headerMap, formatter, "wb_barcode", "штрихкод", "barcode"));
-                product.setCategory(getString(row, headerMap, formatter, "category", "категория"));
+                if (wbArticle != null) {
+                    product.setWbArticle(wbArticle.trim());
+                }
+                product.setWbBarcode(getString(row, headerMap, formatter,
+                        "wb_barcode", "штрихкод", "barcode", "баркод", "шк"));
+                product.setCategory(getString(row, headerMap, formatter,
+                        "category", "категория", "предмет", "категориятовара"));
                 product.setBrand(getString(row, headerMap, formatter, "brand", "бренд"));
-                product.setStockQuantity(getInteger(row, headerMap, formatter, "stock", "остаток", "stock_quantity"));
+                product.setStockQuantity(getInteger(row, headerMap, formatter,
+                        "stock", "остаток", "stock_quantity", "колво", "количество"));
 
                 if ((product.getName() == null || product.getName().isBlank()) && wbArticle != null) {
                     product.setName("Товар " + wbArticle);
@@ -95,7 +115,12 @@ public class ProductImportService {
 
                 boolean isNew = product.getId() == null;
 
-                BigDecimal plannedPrice = getDecimal(row, headerMap, formatter, "price", "продажнаяцена", "цена");
+                BigDecimal plannedPrice = getDecimal(row, headerMap, formatter,
+                        "price", "продажнаяцена", "цена", "ценарозничная", "розничнаяцена");
+                if (plannedPrice == null) {
+                    plannedPrice = getDecimal(row, headerMap, formatter,
+                            "вайлдберризреализовалтоварпр", "реализация", "продажапоакции");
+                }
                 if (plannedPrice != null) {
                     if (plannedPrice.compareTo(BigDecimal.ZERO) <= 0) {
                         errors.add(String.format(Locale.ROOT,
@@ -110,28 +135,32 @@ public class ProductImportService {
                             "Строка %d: не указана цена, установлено значение по умолчанию 1", row.getRowNum() + 1));
                 }
 
-                BigDecimal purchase = getDecimal(row, headerMap, formatter, "purchaseprice", "закупка", "purchase_price");
+                BigDecimal purchase = getDecimal(row, headerMap, formatter,
+                        "purchaseprice", "закупка", "purchase_price", "закупочнаяцена");
                 if (purchase == null) {
                     warnings.add(String.format(Locale.ROOT,
                             "Строка %d: не заполнено поле «Закупка».", row.getRowNum() + 1));
                 }
                 product.setPurchasePrice(purchase);
 
-                BigDecimal logistics = getDecimal(row, headerMap, formatter, "logistics", "логистика", "logistics_cost");
+                BigDecimal logistics = getDecimal(row, headerMap, formatter,
+                        "logistics", "логистика", "logistics_cost", "возмещениеиздержек", "доставка");
                 if (logistics == null) {
                     warnings.add(String.format(Locale.ROOT,
                             "Строка %d: не указаны логистические расходы.", row.getRowNum() + 1));
                 }
                 product.setLogisticsCost(logistics);
 
-                BigDecimal marketing = getDecimal(row, headerMap, formatter, "marketing", "маркетинг", "marketing_cost");
+                BigDecimal marketing = getDecimal(row, headerMap, formatter,
+                        "marketing", "маркетинг", "marketing_cost", "промокод", "реклама");
                 if (marketing == null) {
                     warnings.add(String.format(Locale.ROOT,
                             "Строка %d: не указаны маркетинговые расходы.", row.getRowNum() + 1));
                 }
                 product.setMarketingCost(marketing);
 
-                BigDecimal other = getDecimal(row, headerMap, formatter, "other", "прочие", "other_expenses");
+                BigDecimal other = getDecimal(row, headerMap, formatter,
+                        "other", "прочие", "other_expenses", "прочиерасходы", "штрафы");
                 if (other == null) {
                     warnings.add(String.format(Locale.ROOT,
                             "Строка %d: не указаны прочие расходы.", row.getRowNum() + 1));
