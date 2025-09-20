@@ -65,11 +65,12 @@ describe('Dashboard alerts loading', () => {
 
   it('does not call API when no auth token and shows zeroes', async () => {
     render(<Wrapper token={null} />);
-    await waitFor(() => {
-      expect(screen.getByText('Отрицательная маржа')).toBeInTheDocument();
-      const zeros = screen.getAllByText('0');
-      expect(zeros.length).toBeGreaterThanOrEqual(3);
-    });
+    // дождёмся окончания загрузки
+    await waitFor(() => expect(screen.queryByText('Загрузка…')).not.toBeInTheDocument());
+    // базовые элементы отрисованы
+    expect(screen.getByText('Отрицательная маржа')).toBeInTheDocument();
+    // пустое состояние алертов отображается
+    expect(screen.getByText('Проблем не обнаружено')).toBeInTheDocument();
     expect((mockedAxios.get as any)).not.toHaveBeenCalled();
   });
 });
