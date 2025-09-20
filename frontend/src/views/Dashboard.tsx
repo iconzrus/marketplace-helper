@@ -29,6 +29,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
+    if (!token) {
+      // Без токена не показываем загрузку и сразу очищаем алерты
+      setAlerts([]);
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     const loadWithRetry = async () => {
       setLoading(true);
@@ -72,13 +78,14 @@ export default function Dashboard() {
   }, [(ctx as any)?.alerts]);
 
   const handleRefresh = async () => {
+    const currentToken = (ctx as any)?.authToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('mh_auth_token') : null);
+    if (!currentToken) {
+      // Ничего не делаем, если пользователь не авторизован
+      setAlerts([]);
+      return;
+    }
     setLoading(true);
     try {
-      const currentToken = (ctx as any)?.authToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('mh_auth_token') : null);
-      if (!currentToken) {
-        setAlerts([]);
-        return;
-      }
       if (typeof (ctx as any)?.fetchAlerts === 'function') {
         await (ctx as any).fetchAlerts();
         const list = (ctx as any).alerts as Alert[] | undefined;
