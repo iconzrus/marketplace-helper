@@ -104,8 +104,8 @@ export default function Dashboard() {
 
   return (
     <section className="panel">
-      <div className="panel__title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h2>Dashboard</h2>
+      <h2>Dashboard</h2>
+      <div style={{ margin: '8px 0 16px 0' }}>
         <button className="btn btn--secondary" onClick={handleRefresh} disabled={loading}>
           {loading ? 'Обновление…' : 'Обновить'}
         </button>

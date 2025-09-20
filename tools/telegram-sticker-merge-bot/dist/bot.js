@@ -37,14 +37,19 @@ function sanitizeShortNameInput(input) {
     const cleaned = trimmed.replace(/[^A-Za-z0-9_]/g, "_");
     return cleaned.slice(0, 64);
 }
-async function finalizeShortName(api, input) {
-    const base = sanitizeShortNameInput(input);
+async function generateShortNameForChunk(api, userInput, chunkIndex) {
     const username = (await getBotUsername(api)).toLowerCase();
     const suffix = `_by_${username}`;
-    if (base.toLowerCase().endsWith(suffix))
-        return base;
+    let base = sanitizeShortNameInput(userInput);
+    // remove existing suffix if present (case-insensitive)
+    if (base.toLowerCase().endsWith(suffix)) {
+        base = base.slice(0, base.length - suffix.length);
+    }
+    // add numeric index before suffix when needed
+    const withIndex = chunkIndex === 0 ? base : `${base}_${chunkIndex + 1}`;
+    // ensure total length <= 64
     const maxBaseLen = 64 - suffix.length;
-    const truncated = base.slice(0, Math.max(0, maxBaseLen));
+    const truncated = withIndex.slice(0, Math.max(0, maxBaseLen));
     return `${truncated}${suffix}`;
 }
 bot.command("start", async (ctx) => {
@@ -193,7 +198,7 @@ bot.command("emoji_done", async (ctx) => {
     }
     const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
     if (ids.length === 0) {
-        await ctx.reply("Пока нет эмодзи. Пришли текст с кастомными эмодзи и повтори /emoji_done.");
+        await ctx.reply("Пока нет эмодзи. Пришли текст с кастомными эмоджи и повтори /emoji_done.");
         return;
     }
     await ctx.reply(`Собрано эмодзи: ${ids.length}. Введи заголовок нового набора.`);
@@ -254,7 +259,6 @@ async function createSetsAndFill(ctx) {
     const userId = ctx.from.id;
     const title = ctx.session.desiredTitle;
     const baseShortInput = ctx.session.desiredShortName;
-    const baseShort = await finalizeShortName(ctx.api, baseShortInput);
     const refs = ctx.session.chosen;
     const byFormat = new Map();
     for (const ref of refs) {
@@ -268,7 +272,7 @@ async function createSetsAndFill(ctx) {
     for (const [format, list] of byFormat.entries()) {
         for (let chunkIndex = 0; chunkIndex * MAX_STICKERS_PER_SET < list.length; chunkIndex++) {
             const chunk = list.slice(chunkIndex * MAX_STICKERS_PER_SET, (chunkIndex + 1) * MAX_STICKERS_PER_SET);
-            const short = chunkIndex === 0 ? baseShort : `${baseShort}_${chunkIndex + 1}`;
+            const short = await generateShortNameForChunk(ctx.api, baseShortInput, chunkIndex);
             const setTitle = chunkIndex === 0 ? title : `${title} (${chunkIndex + 1})`;
             const summary = { shortName: short, title: setTitle, format, total: chunk.length, added: 0, skipped: [] };
             const first = chunk[0];
@@ -327,11 +331,9 @@ async function createCustomEmojiSets(ctx) {
     const userId = ctx.from.id;
     const title = ctx.session.desiredTitle;
     const baseShortInput = ctx.session.desiredShortName;
-    const baseShort = await finalizeShortName(ctx.api, baseShortInput);
     const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
     const stickersResp = await ctx.api.getCustomEmojiStickers(ids);
     const stickers = stickersResp ?? [];
-    // Expand to full sets if requested
     let expanded = stickers;
     if (ctx.session.emojiCollectMode === "full_sets") {
         const setNames = Array.from(new Set(expanded.map((s) => s.set_name || s.sticker_set_name).filter(Boolean)));
@@ -341,18 +343,15 @@ async function createCustomEmojiSets(ctx) {
                 const set = await ctx.api.getStickerSet(name);
                 full.push(...set.stickers);
             }
-            catch {
-                // ignore
-            }
+            catch { }
         }
-        expanded = full.length ? full : stickers;
+        expanded = full.length ? full : expanded;
     }
     const items = expanded.map((s) => ({
         fileId: s.file_id,
         emoji: s.emoji ?? "",
         format: s.is_animated ? "animated" : s.is_video ? "video" : "static",
     }));
-    // Deduplicate by fileId
     const seen = new Set();
     const deduped = [];
     for (const it of items) {
@@ -371,7 +370,7 @@ async function createCustomEmojiSets(ctx) {
     for (const [format, list] of byFormat.entries()) {
         for (let chunkIndex = 0; chunkIndex * MAX_STICKERS_PER_SET < list.length; chunkIndex++) {
             const chunk = list.slice(chunkIndex * MAX_STICKERS_PER_SET, (chunkIndex + 1) * MAX_STICKERS_PER_SET);
-            const short = chunkIndex === 0 ? baseShort : `${baseShort}_${chunkIndex + 1}`;
+            const short = await generateShortNameForChunk(ctx.api, baseShortInput, chunkIndex);
             const setTitle = chunkIndex === 0 ? title : `${title} (${chunkIndex + 1})`;
             const first = chunk[0];
             const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
