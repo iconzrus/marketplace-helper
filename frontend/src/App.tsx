@@ -163,6 +163,9 @@ export type AppOutletContext = {
   sourceBadge: (v?: ProductAnalytics['dataSource']) => string;
   // actions
   __openWhatIf?: (item: ProductAnalytics) => void;
+  // Alerts
+  alerts: { type: 'LOW_MARGIN' | 'NEGATIVE_MARGIN' | 'LOW_STOCK'; wbArticle?: string; name?: string; margin?: number; marginPercent?: number; localStock?: number; wbStock?: number; }[];
+  fetchAlerts: () => Promise<void>;
 };
 
 const App = () => {
@@ -205,6 +208,7 @@ const App = () => {
   const [genType, setGenType] = useState<'both' | 'excel' | 'wb'>('both');
   const [delCount, setDelCount] = useState<string>('5');
   const [delAll, setDelAll] = useState<boolean>(false);
+  const [alerts, setAlerts] = useState<{ type: 'LOW_MARGIN' | 'NEGATIVE_MARGIN' | 'LOW_STOCK'; wbArticle?: string; name?: string; margin?: number; marginPercent?: number; localStock?: number; wbStock?: number; }[]>([]);
 
   const location = useLocation();
   const isRoot = location.pathname === '/';
@@ -418,6 +422,7 @@ const App = () => {
     fetchWbProducts();
     fetchWbStatuses();
     fetchValidation();
+    fetchAlerts();
   }, [authToken]);
 
   useEffect(() => {
@@ -577,6 +582,16 @@ const App = () => {
       setError('Не удалось удалить данные.');
     } finally {
       setDemoActionLoading(false);
+    }
+  };
+
+  const fetchAlerts = async () => {
+    if (!authToken) return;
+    try {
+      const { data } = await axios.get('/api/alerts');
+      setAlerts(Array.isArray(data) ? data : []);
+    } catch (_) {
+      setAlerts([]);
     }
   };
 
@@ -793,7 +808,9 @@ const App = () => {
           demoMode, setDemoMode, runDemoAutofill, genCount, setGenCount, genType, setGenType, delCount, setDelCount, delAll, setDelAll, runDemoGenerate, runDemoDelete,
           // helpers
           currency, percent, numberFormat, sourceBadge,
-          __openWhatIf: openWhatIf
+          __openWhatIf: openWhatIf,
+          alerts,
+          fetchAlerts
         } as AppOutletContext} />
       </div>
 

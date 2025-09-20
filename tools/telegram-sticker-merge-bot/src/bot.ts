@@ -15,6 +15,7 @@ function initial(): SessionData {
     selectionMode: "ranges",
     selectionQuery: "",
     chosen: [],
+    customEmojiIds: [],
   };
 }
 
@@ -39,6 +40,7 @@ bot.command("start", async (ctx) => {
       "- shortname: cats_pack_2024",
       "- ссылка: t.me/addstickers/cats_pack_2024",
       "Или просто вышли по одному стикеру из нужных наборов — я сам определю имя набора.",
+      "Если нужно собрать набор ИЗ кастомных эмодзи: присылай сообщения с эмодзи и затем /emoji_done (или начни с /emoji).",
       "Когда закончишь — пришли /done.",
     ].join("\n")
   );
@@ -87,6 +89,28 @@ bot.on("message:text", async (ctx) => {
     return;
   }
 
+  if (ctx.session.stage === "awaiting_custom_emoji") {
+    const collect = (entities?: any[]) => {
+      if (!entities) return [] as string[];
+      return entities
+        .filter((e) => e.type === "custom_emoji" && e.custom_emoji_id)
+        .map((e) => e.custom_emoji_id as string);
+    };
+    const ids = [
+      ...collect((ctx.message as any).entities),
+      ...collect((ctx.message as any).caption_entities),
+    ];
+    if (ids.length === 0) {
+      await ctx.reply("Не нашёл кастомных эмодзи в сообщении. Пришли текст с нужными эмодзи или /emoji_done.");
+      return;
+    }
+    const before = ctx.session.customEmojiIds?.length ?? 0;
+    ctx.session.customEmojiIds = Array.from(new Set([...(ctx.session.customEmojiIds ?? []), ...ids]));
+    const after = ctx.session.customEmojiIds.length;
+    await ctx.reply(`Добавлено эмодзи: +${after - before}. Всего: ${after}. Присылай ещё или /emoji_done.`);
+    return;
+  }
+
   if (ctx.session.stage === "confirm_create") {
     if (!ctx.session.desiredTitle) {
       ctx.session.desiredTitle = text;
@@ -94,7 +118,11 @@ bot.on("message:text", async (ctx) => {
       return;
     }
     ctx.session.desiredShortName = text;
-    await createSetsAndFill(ctx);
+    if ((ctx.session.customEmojiIds?.length ?? 0) > 0) {
+      await createCustomEmojiSets(ctx);
+    } else {
+      await createSetsAndFill(ctx);
+    }
     return;
   }
 });
@@ -130,6 +158,27 @@ bot.callbackQuery(/page:(\d+)/, async (ctx) => {
   const page = Number(ctx.match[1]);
   await renderSetsSummary(ctx, page);
   await ctx.answerCallbackQuery();
+});
+
+bot.command("emoji", async (ctx) => {
+  ctx.session = initial();
+  ctx.session.stage = "awaiting_custom_emoji";
+  ctx.session.customEmojiIds = [];
+  await ctx.reply("Режим эмодзи: пришли сообщения с нужными кастомными эмодзи, затем /emoji_done.");
+});
+
+bot.command("emoji_done", async (ctx) => {
+  if (ctx.session.stage !== "awaiting_custom_emoji") {
+    await ctx.reply("Сначала запусти /emoji и пришли эмодзи.");
+    return;
+  }
+  const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
+  if (ids.length === 0) {
+    await ctx.reply("Пока нет эмодзи. Пришли текст с кастомными эмодзи и повтори /emoji_done.");
+    return;
+  }
+  await ctx.reply(`Собрано эмодзи: ${ids.length}. Введи заголовок нового набора.`);
+  ctx.session.stage = "confirm_create";
 });
 
 async function loadSourceSets(api: Api, ctx: MyContext) {
@@ -308,6 +357,89 @@ async function addStickerByFormat(
   else if (format === "animated") inputSticker.tgs_sticker = fileId;
   else inputSticker.webm_sticker = fileId;
   await api.addStickerToSet(userId, shortName, inputSticker);
+}
+
+async function createCustomEmojiSets(ctx: MyContext) {
+  // Create custom emoji set(s) from collected customEmojiIds
+  ctx.session.stage = "creating";
+  const userId = ctx.from!.id;
+  const title = ctx.session.desiredTitle!;
+  const baseShort = ctx.session.desiredShortName!;
+  const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
+
+  // Fetch Sticker objects for custom emoji ids
+  const stickersResp = await ctx.api.getCustomEmojiStickers(ids);
+  const stickers = stickersResp ?? [];
+
+  // Telegram requires sticker_type = custom_emoji and sticker_format must match source
+  // We'll split by format and by MAX_STICKERS_PER_SET
+  type Item = { fileId: string; emoji?: string; format: StickerFormat };
+  const items: Item[] = stickers.map((s) => ({
+    fileId: s.file_id,
+    emoji: s.emoji ?? "",
+    format: s.is_animated ? "animated" : s.is_video ? "video" : "static",
+  }));
+
+  const byFormat = new Map<StickerFormat, Item[]>();
+  for (const it of items) {
+    const list = byFormat.get(it.format) ?? [];
+    list.push(it);
+    byFormat.set(it.format, list);
+  }
+
+  const results: string[] = [];
+  for (const [format, list] of byFormat.entries()) {
+    for (let chunkIndex = 0; chunkIndex * MAX_STICKERS_PER_SET < list.length; chunkIndex++) {
+      const chunk = list.slice(
+        chunkIndex * MAX_STICKERS_PER_SET,
+        (chunkIndex + 1) * MAX_STICKERS_PER_SET
+      );
+      const short = chunkIndex === 0 ? baseShort : `${baseShort}_${chunkIndex + 1}`;
+      const setTitle = chunkIndex === 0 ? title : `${title} (${chunkIndex + 1})`;
+
+      // Create set with first sticker (sticker_type=custom_emoji)
+      const first = chunk[0];
+      const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
+      const firstInput: any = { emoji_list: [first.emoji ?? "" ] };
+      if (format === "static") firstInput.png_sticker = first.fileId;
+      else if (format === "animated") firstInput.tgs_sticker = first.fileId;
+      else firstInput.webm_sticker = first.fileId;
+
+      try {
+        await ctx.api.createNewStickerSet(userId, short, setTitle, {
+          sticker_format,
+          sticker_type: "custom_emoji",
+          stickers: [firstInput],
+        } as any);
+      } catch (e: any) {
+        await ctx.reply(`Не удалось создать набор ${setTitle}: ${e.description ?? e.message}`);
+        continue;
+      }
+
+      // Add the rest
+      let added = 1;
+      for (const it of chunk.slice(1)) {
+        const input: any = { emoji_list: [it.emoji ?? ""] };
+        if (format === "static") input.png_sticker = it.fileId;
+        else if (format === "animated") input.tgs_sticker = it.fileId;
+        else input.webm_sticker = it.fileId;
+        try {
+          await ctx.api.addStickerToSet(userId, short, input);
+          added += 1;
+        } catch (e: any) {
+          // continue, but record error
+        }
+      }
+      results.push(`Создано: ${setTitle} (${short}) — добавлено ${added}/${chunk.length}\nt.me/addstickers/${short}`);
+    }
+  }
+
+  if (results.length === 0) {
+    await ctx.reply("Ничего не создано.");
+  } else {
+    await ctx.reply(results.join("\n\n"));
+  }
+  ctx.session = initial();
 }
 
 if (process.env.NODE_ENV !== "test") {

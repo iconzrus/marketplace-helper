@@ -47,6 +47,13 @@ export default function Dashboard() {
     load();
   }, [token]);
 
+  // Also subscribe to global alerts from context to keep dashboard in sync after login or demo actions
+  useEffect(() => {
+    if (Array.isArray((ctx as any)?.alerts) && (ctx as any).alerts.length && !alerts.length) {
+      setAlerts((ctx as any).alerts);
+    }
+  }, [(ctx as any)?.alerts]);
+
   const groups = {
     NEGATIVE_MARGIN: alerts.filter(a => a.type === 'NEGATIVE_MARGIN'),
     LOW_MARGIN: alerts.filter(a => a.type === 'LOW_MARGIN'),

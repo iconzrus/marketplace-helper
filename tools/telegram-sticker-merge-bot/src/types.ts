@@ -36,6 +36,7 @@ export interface SessionData {
   stage:
     | "idle"
     | "awaiting_sets"
+    | "awaiting_custom_emoji"
     | "review_sets"
     | "awaiting_selection"
     | "confirm_create"
@@ -47,6 +48,7 @@ export interface SessionData {
   chosen: ChosenStickerRef[]; // resolved selection
   desiredTitle?: string;
   desiredShortName?: string;
+  customEmojiIds?: string[]; // collected custom emoji ids from messages
 }
 
 export const MAX_STICKERS_PER_SET = 120; // conservative default; API may allow more for video
