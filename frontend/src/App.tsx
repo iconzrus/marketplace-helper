@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { computeMargin } from './utils';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 interface ProductAnalytics {
   productId?: number;
@@ -104,6 +104,56 @@ const sourceBadge = (value?: ProductAnalytics['dataSource']) => {
     default:
       return '—';
   }
+};
+
+export type AppOutletContext = {
+  // WB Catalog
+  wbProducts: WbProduct[];
+  loadingWb: boolean;
+  useLocalData: boolean;
+  setUseLocalData: (v: boolean) => void;
+  query: string; setQuery: (v: string) => void;
+  brand: string; setBrand: (v: string) => void;
+  category: string; setCategory: (v: string) => void;
+  minPrice: string; setMinPrice: (v: string) => void;
+  maxPrice: string; setMaxPrice: (v: string) => void;
+  minDiscount: string; setMinDiscount: (v: string) => void;
+  page: number; setPage: (v: number | ((p:number)=>number)) => void;
+  totalPages: number;
+  pagedProducts: WbProduct[];
+  fetchWbProducts: () => Promise<void>;
+  handleSyncWb: () => Promise<void>;
+  fetchAnalytics: (o?: { minMarginPercent?: number }) => Promise<void>;
+
+  // Analytics
+  analyticsReport: ProductAnalyticsReport | null;
+  loadingAnalytics: boolean;
+  minMarginPercent: number | undefined;
+  setMinMarginPercent: (v: number | undefined) => void;
+  handleApplyMinMargin: () => void;
+  handleExport: () => Promise<void>;
+
+  // Corrections
+  validationItems: ProductValidationItem[] | null;
+  loadingValidation: boolean;
+  fetchValidation: (o?: { minMarginPercent?: number }) => Promise<void>;
+
+  // Import
+  handleFileUpload: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
+
+  // Demo
+  demoMode: boolean; setDemoMode: (v: boolean) => void;
+  runDemoAutofill: () => Promise<void>;
+  genCount: string; setGenCount: (v: string) => void;
+  genType: 'both'|'excel'|'wb'; setGenType: (v: 'both'|'excel'|'wb') => void;
+  delCount: string; setDelCount: (v: string) => void;
+  delAll: boolean; setDelAll: (v: boolean) => void; runDemoGenerate: () => Promise<void>; runDemoDelete: () => Promise<void>;
+
+  // helpers
+  currency: (v?: number) => string;
+  percent: (v?: number) => string;
+  numberFormat: (v?: number) => string;
+  sourceBadge: (v?: ProductAnalytics['dataSource']) => string;
 };
 
 const App = () => {
@@ -704,19 +754,32 @@ const App = () => {
       </header>
 
       <nav className="nav">
-        <Link to="/">Dashboard</Link>
-        <Link to="/wb">WB Каталог</Link>
-        <Link to="/analytics">Аналитика</Link>
-        <Link to="/corrections">Корректировки</Link>
-        <Link to="/import">Импорт</Link>
-        <Link to="/demo">Демо‑центр</Link>
+        <NavLink to="/" end>Dashboard</NavLink>
+        <NavLink to="/wb">WB Каталог</NavLink>
+        <NavLink to="/analytics">Аналитика</NavLink>
+        <NavLink to="/corrections">Корректировки</NavLink>
+        <NavLink to="/import">Импорт</NavLink>
+        <NavLink to="/demo">Демо‑центр</NavLink>
       </nav>
 
       {error && <div className="message message--error">{error}</div>}
       {message && <div className="message message--success">{message}</div>}
 
       <div className="route-outlet">
-        <Outlet />
+        <Outlet context={{
+          // WB
+          wbProducts, loadingWb, useLocalData, setUseLocalData, query, setQuery, brand, setBrand, category, setCategory, minPrice, setMinPrice, maxPrice, setMaxPrice, minDiscount, setMinDiscount, page, setPage, totalPages, pagedProducts, fetchWbProducts, handleSyncWb, fetchAnalytics,
+          // Analytics
+          analyticsReport, loadingAnalytics, minMarginPercent, setMinMarginPercent, handleApplyMinMargin, handleExport,
+          // Corrections
+          validationItems, loadingValidation, fetchValidation,
+          // Import
+          handleFileUpload,
+          // Demo
+          demoMode, setDemoMode, runDemoAutofill, genCount, setGenCount, genType, setGenType, delCount, setDelCount, delAll, setDelAll, runDemoGenerate, runDemoDelete,
+          // helpers
+          currency, percent, numberFormat, sourceBadge
+        } as AppOutletContext} />
       </div>
 
       {whatIfOpen.open && whatIfOpen.item && (

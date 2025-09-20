@@ -1,10 +1,131 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
+import type { AppOutletContext } from '../App';
 
 export default function Analytics() {
+  const ctx = useOutletContext<AppOutletContext>();
   return (
     <section className="panel">
-      <h2>Аналитика</h2>
-      <p>Здесь будут табы (Профитные / Требуют внимания) и фильтры.</p>
+      <div className="panel__title analytics-header">
+        <div>
+          <h2>Маржинальность и сопоставление</h2>
+          {ctx.analyticsReport && (
+            <div className="analytics-summary">
+              <span>Всего позиций: {ctx.analyticsReport.totalProducts}</span>
+              <span>Профитных: {ctx.analyticsReport.profitableCount}</span>
+              <span>Нуждаются в корректировке: {ctx.analyticsReport.requiresAttentionCount}</span>
+            </div>
+          )}
+        </div>
+        <div className="analytics-controls">
+          <label>
+            Порог маржи, %
+            <input type="number" inputMode="decimal" value={ctx.minMarginPercent ?? ''} onChange={e => ctx.setMinMarginPercent(e.target.value === '' ? undefined : Number(e.target.value))} placeholder={ctx.analyticsReport?.appliedMinMarginPercent?.toString() ?? '—'} />
+          </label>
+          <button onClick={ctx.handleApplyMinMargin} disabled={ctx.loadingAnalytics}>{ctx.loadingAnalytics ? 'Пересчёт…' : 'Применить'}</button>
+          <button onClick={ctx.handleExport}>Скачать отчёт</button>
+        </div>
+      </div>
+
+      {ctx.loadingAnalytics ? (
+        <div className="message message--info">Расчёт…</div>
+      ) : !ctx.analyticsReport ? (
+        <div className="message message--info">Нет загруженных данных.</div>
+      ) : (
+        <>
+          <div className="table-wrapper">
+            <h3>Профитные товары</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Товар</th>
+                  <th>Артикул</th>
+                  <th className="numeric">Цена WB</th>
+                  <th className="numeric">Закупка</th>
+                  <th className="numeric">Логистика</th>
+                  <th className="numeric">Маркетинг</th>
+                  <th className="numeric">Прочие</th>
+                  <th className="numeric">Маржа</th>
+                  <th className="numeric">Маржа %</th>
+                  <th className="numeric">Остаток (лок.)</th>
+                  <th className="numeric">Остаток WB</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(ctx.analyticsReport.profitable ?? []).map(item => (
+                  <tr key={`${item.productId ?? item.wbProductId ?? item.wbArticle}`}>
+                    <td>
+                      <div className="cell-with-meta">
+                        <div>{item.name ?? '—'}</div>
+                        <span className="badge">{ctx.sourceBadge(item.dataSource)}</span>
+                      </div>
+                    </td>
+                    <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
+                    <td className="numeric">{ctx.currency(item.wbDiscountPrice ?? item.wbPrice)}</td>
+                    <td className="numeric">{ctx.currency(item.purchasePrice)}</td>
+                    <td className="numeric">{ctx.currency(item.logisticsCost)}</td>
+                    <td className="numeric">{ctx.currency(item.marketingCost)}</td>
+                    <td className="numeric">{ctx.currency(item.otherExpenses)}</td>
+                    <td className={`numeric ${item.margin != null && item.margin < 0 ? 'negative' : ''}`}>{ctx.currency(item.margin)}</td>
+                    <td className={`numeric ${item.marginPercent != null && (item.marginPercent < 0 || item.marginBelowThreshold) ? 'warning' : ''}`}>{ctx.percent(item.marginPercent)}</td>
+                    <td className="numeric">{ctx.numberFormat(item.localStock)}</td>
+                    <td className="numeric">{ctx.numberFormat(item.wbStock)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="table-wrapper">
+            <h3>Требуют корректировки или сопоставления</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Товар</th>
+                  <th>Артикул</th>
+                  <th className="numeric">Цена</th>
+                  <th className="numeric">Закупка</th>
+                  <th className="numeric">Логистика</th>
+                  <th className="numeric">Маркетинг</th>
+                  <th className="numeric">Прочие</th>
+                  <th className="numeric">Маржа</th>
+                  <th className="numeric">Маржа %</th>
+                  <th className="numeric">Остаток (лок.)</th>
+                  <th className="numeric">Остаток WB</th>
+                  <th>Комментарии</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(ctx.analyticsReport.requiresAttention ?? []).map(item => (
+                  <tr key={`attention-${item.productId ?? item.wbProductId ?? item.wbArticle}`}>
+                    <td>
+                      <div className="cell-with-meta">
+                        <div>{item.name ?? '—'}</div>
+                        <span className="badge badge--attention">{ctx.sourceBadge(item.dataSource)}</span>
+                      </div>
+                    </td>
+                    <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
+                    <td className="numeric">{ctx.currency(item.wbDiscountPrice ?? item.wbPrice ?? item.localPrice)}</td>
+                    <td className="numeric">{ctx.currency(item.purchasePrice)}</td>
+                    <td className="numeric">{ctx.currency(item.logisticsCost)}</td>
+                    <td className="numeric">{ctx.currency(item.marketingCost)}</td>
+                    <td className="numeric">{ctx.currency(item.otherExpenses)}</td>
+                    <td className={`numeric ${item.negativeMargin ? 'negative' : ''}`}>{ctx.currency(item.margin)}</td>
+                    <td className={`numeric ${item.marginBelowThreshold ? 'warning' : ''}`}>{ctx.percent(item.marginPercent)}</td>
+                    <td className="numeric">{ctx.numberFormat(item.localStock)}</td>
+                    <td className="numeric">{ctx.numberFormat(item.wbStock)}</td>
+                    <td>
+                      {item.warnings && item.warnings.length > 0 ? (
+                        <ul className="warnings">{item.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                      ) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </section>
   );
 }
