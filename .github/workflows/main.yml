@@ -9,8 +9,12 @@ on:
   workflow_dispatch: {}
   push:
     branches: [ main ]
-    paths:
-      - 'frontend/**'
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   build-deploy:
@@ -19,9 +23,6 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     defaults:
       run:
         working-directory: frontend
@@ -47,6 +48,7 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        if: github.event_name == 'push'
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -56,3 +58,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        if: github.event_name == 'push'
