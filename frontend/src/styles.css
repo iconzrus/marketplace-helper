@@ -96,6 +96,18 @@ body {
   gap: 24px;
 }
 
+.app__header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app__header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .app__header h1 {
   margin: 0 0 8px;
   font-size: 32px;
@@ -129,6 +141,66 @@ body {
   font-size: 20px;
 }
 
+.auth-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.auth-status__user {
+  color: var(--text-brand);
+  font-weight: 600;
+}
+
+.auth-status button {
+  padding: 8px 14px;
+}
+
+.auth-container {
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.auth-panel p {
+  margin-top: 0;
+  color: var(--text-secondary);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.auth-form label span {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.auth-form input {
+  width: 100%;
+}
+
+.auth-form button {
+  align-self: flex-start;
+}
+
+.auth-panel .message {
+  margin-top: 12px;
+}
+
 button {
   background: var(--brand-500);
   border: none;
@@ -138,6 +210,35 @@ button {
   font-size: 14px;
   cursor: pointer;
   transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+@media (min-width: 768px) {
+  .app__header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 button:disabled {

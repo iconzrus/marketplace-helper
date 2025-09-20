@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 
 interface ProductAnalytics {
@@ -62,6 +62,11 @@ interface WbProduct {
   totalQuantity?: number;
 }
 
+interface AuthSuccessResponse {
+  token: string;
+  username: string;
+}
+
 const currency = (value?: number) =>
   value != null ? value.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' }) : '—';
 
@@ -102,9 +107,99 @@ const App = () => {
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [minDiscount, setMinDiscount] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authUser, setAuthUser] = useState<string | null>(null);
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
   const pageSize = 10;
 
+  const handleLogout = useCallback((message?: string) => {
+    setAuthToken(null);
+    setAuthUser(null);
+    localStorage.removeItem('mh_auth_token');
+    localStorage.removeItem('mh_auth_username');
+    setAnalyticsReport(null);
+    setWbProducts([]);
+    setMessage(null);
+    setImportResult(null);
+    setError(null);
+    setLoadingAnalytics(false);
+    setLoadingWb(false);
+    setSyncingWb(false);
+    setAuthError(message ?? null);
+    setAuthLoading(false);
+    setLogin('');
+    setPassword('');
+  }, []);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('mh_auth_token');
+    const storedUsername = localStorage.getItem('mh_auth_username');
+    if (storedToken) {
+      setAuthToken(storedToken);
+    }
+    if (storedUsername) {
+      setAuthUser(storedUsername);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authToken) {
+      axios.defaults.headers.common.Authorization = `Bearer ${authToken}`;
+    } else {
+      delete axios.defaults.headers.common.Authorization;
+    }
+  }, [authToken]);
+
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      response => response,
+      error => {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          handleLogout('Сессия истекла. Войдите повторно.');
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [handleLogout]);
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const { data } = await axios.post<AuthSuccessResponse>('/api/auth/login', {
+        username: login,
+        password
+      });
+      setAuthToken(data.token);
+      setAuthUser(data.username);
+      localStorage.setItem('mh_auth_token', data.token);
+      localStorage.setItem('mh_auth_username', data.username);
+      setLogin('');
+      setPassword('');
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        setAuthError('Неверный логин или пароль.');
+      } else {
+        setAuthError('Не удалось выполнить вход. Попробуйте ещё раз.');
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const fetchAnalytics = async (override?: { minMarginPercent?: number }) => {
+    if (!authToken) {
+      return;
+    }
     setLoadingAnalytics(true);
     setError(null);
     try {
@@ -127,6 +222,9 @@ const App = () => {
       }
     } catch (err) {
       console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        return;
+      }
       setError('Не удалось получить расчётные данные. Проверьте подключение к бэкенду.');
     } finally {
       setLoadingAnalytics(false);
@@ -134,6 +232,9 @@ const App = () => {
   };
 
   const fetchWbProducts = async () => {
+    if (!authToken) {
+      return;
+    }
     setLoadingWb(true);
     setError(null);
     try {
@@ -148,6 +249,9 @@ const App = () => {
       setWbProducts(data);
     } catch (err) {
       console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        return;
+      }
       setError('Не удалось получить товары Wildberries.');
     } finally {
       setLoadingWb(false);
@@ -155,6 +259,9 @@ const App = () => {
   };
 
   const handleSyncWb = async () => {
+    if (!authToken) {
+      return;
+    }
     setSyncingWb(true);
     setError(null);
     setMessage(null);
@@ -164,6 +271,9 @@ const App = () => {
       await fetchWbProducts();
     } catch (err) {
       console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        return;
+      }
       setError('Не удалось синхронизироваться с WB.');
     } finally {
       setSyncingWb(false);
@@ -171,9 +281,19 @@ const App = () => {
   };
 
   useEffect(() => {
+    if (!authToken) {
+      return;
+    }
     fetchAnalytics();
     fetchWbProducts();
-  }, []);
+  }, [authToken]);
+
+  useEffect(() => {
+    if (!authToken) {
+      return;
+    }
+    fetchWbProducts();
+  }, [useLocalData, authToken]);
 
   // Persist settings (theme omitted here, can be added via class on <html>)
   useEffect(() => {
@@ -204,6 +324,11 @@ const App = () => {
       return;
     }
 
+    if (!authToken) {
+      (event.target as HTMLInputElement).value = '';
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -222,6 +347,9 @@ const App = () => {
       await fetchAnalytics();
     } catch (err) {
       console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        return;
+      }
       setError('Ошибка при загрузке файла. Убедитесь, что формат соответствует шаблону.');
     } finally {
       (event.target as HTMLInputElement).value = '';
@@ -241,12 +369,51 @@ const App = () => {
     fetchAnalytics({ minMarginPercent });
   };
 
-  const handleExport = () => {
-    const params = new URLSearchParams({ includeWithoutWb: 'true' });
-    if (minMarginPercent != null) {
-      params.append('minMarginPercent', String(minMarginPercent));
+  const handleExport = async () => {
+    if (!authToken) {
+      return;
     }
-    window.open(`/api/analytics/products/export?${params.toString()}`, '_blank');
+    try {
+      const params: Record<string, unknown> = { includeWithoutWb: true };
+      if (minMarginPercent != null) {
+        params.minMarginPercent = minMarginPercent;
+      }
+      const response = await axios.get<Blob>('/api/analytics/products/export', {
+        params,
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] ??
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      let filename = 'analytics-report.xlsx';
+      const disposition = response.headers['content-disposition'];
+      if (typeof disposition === 'string') {
+        const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(disposition);
+        const encoded = match?.[1] ?? match?.[2];
+        if (encoded) {
+          try {
+            filename = decodeURIComponent(encoded);
+          } catch (_) {
+            filename = encoded;
+          }
+        }
+      }
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        return;
+      }
+      setError('Не удалось сформировать отчёт.');
+    }
   };
 
   const renderAnalyticsRows = (items: ProductAnalytics[]) =>
@@ -306,14 +473,75 @@ const App = () => {
       </tr>
     ));
 
+  if (!authToken) {
+    return (
+      <div className="app">
+        <header className="app__header">
+          <div className="app__header-content">
+            <h1>Marketplace Helper</h1>
+            <p>
+              Демонстрационное приложение для менеджера по маркетплейсам. Загружайте корпоративные Excel-данные,
+              просматривайте товары Wildberries и анализируйте маржинальность.
+            </p>
+          </div>
+        </header>
+        <div className="auth-container">
+          <section className="panel auth-panel">
+            <h2>Вход в систему</h2>
+            <p>
+              Укажите логин и пароль, чтобы открыть рабочий кабинет и управлять товарами Wildberries.
+            </p>
+            {authError && <div className="message message--error">{authError}</div>}
+            <form className="auth-form" onSubmit={handleLogin}>
+              <label>
+                <span>Логин</span>
+                <input
+                  value={login}
+                  onChange={event => setLogin(event.target.value)}
+                  autoComplete="username"
+                  placeholder="Введите логин"
+                  required
+                />
+              </label>
+              <label>
+                <span>Пароль</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={event => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Введите пароль"
+                  required
+                />
+              </label>
+              <button type="submit" disabled={authLoading}>
+                {authLoading ? 'Вход…' : 'Войти'}
+              </button>
+            </form>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <header className="app__header">
-        <h1>Marketplace Helper</h1>
-        <p>
-          Демонстрационное приложение для менеджера по маркетплейсам. Загружайте корпоративные Excel-данные,
-          просматривайте товары Wildberries и анализируйте маржинальность.
-        </p>
+        <div className="app__header-content">
+          <h1>Marketplace Helper</h1>
+          <p>
+            Демонстрационное приложение для менеджера по маркетплейсам. Загружайте корпоративные Excel-данные,
+            просматривайте товары Wildberries и анализируйте маржинальность.
+          </p>
+        </div>
+        <div className="auth-status">
+          <span>
+            Вошли как <span className="auth-status__user">{authUser ?? 'пользователь'}</span>
+          </span>
+          <button className="btn btn--secondary" onClick={() => handleLogout()}>
+            Выйти
+          </button>
+        </div>
       </header>
 
       {error && <div className="message message--error">{error}</div>}
