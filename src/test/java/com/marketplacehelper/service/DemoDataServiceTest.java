@@ -53,6 +53,24 @@ class DemoDataServiceTest {
         assertThat(updated.getMarketingCost()).isEqualByComparingTo(new BigDecimal("80.00"));
         assertThat(updated.getOtherExpenses()).isEqualByComparingTo(new BigDecimal("0"));
     }
+
+    @Test
+    void fillRandomAllCompletesMergingAndPopulatesFields() {
+        Product p = new Product();
+        p.setName("Excel Only");
+        p.setPrice(new BigDecimal("1200"));
+        productRepository.saveAndFlush(p);
+
+        int affected = demoDataService.fillRandomAll();
+        assertThat(affected).isGreaterThan(0);
+
+        Product updated = productRepository.findAll().get(0);
+        assertThat(updated.getWbArticle()).isNotBlank();
+        assertThat(updated.getPurchasePrice()).isNotNull();
+        assertThat(updated.getLogisticsCost()).isNotNull();
+        assertThat(updated.getMarketingCost()).isNotNull();
+        assertThat(updated.getOtherExpenses()).isNotNull();
+    }
 }
 
 

@@ -452,22 +452,14 @@ const App = () => {
     setMessage(null);
     setError(null);
     try {
-      const body: Record<string, unknown> = {
-        purchasePercentOfPrice: 60,
-        logisticsFixed: 70,
-        marketingPercentOfPrice: 8,
-        otherFixed: 0,
-        onlyIfMissing: true,
-        limit: 100
-      };
-      await axios.post('/api/demo/autofill-costs', body);
+      await axios.post('/api/demo/fill-random-all');
       await fetchAnalytics();
       await fetchValidation();
-      setMessage('Демо‑автозаполнение выполнено. Пересчёт и причины обновлены.');
+      setMessage('Демо‑заполнение: товары объединены и данные сгенерированы.');
     } catch (err) {
       console.error(err);
       if (axios.isAxiosError(err) && err.response?.status === 401) return;
-      setError('Не удалось выполнить демо‑автозаполнение.');
+      setError('Не удалось выполнить демо‑заполнение.');
     } finally {
       setDemoActionLoading(false);
     }
@@ -725,7 +717,7 @@ const App = () => {
         </div>
         {!validationItems ? (
           <div className="message message--info">Нет данных о корректировках. Выполните расчёт или загрузите Excel.</div>
-        ) : validationItems.length === 0 ? (
+        ) : (validationItems.filter(v => v.issues && v.issues.length > 0).length === 0) ? (
           <div className="message message--success">Все товары проходят без корректировок.</div>
         ) : (
           <div className="table-wrapper">
@@ -739,7 +731,7 @@ const App = () => {
                 </tr>
               </thead>
               <tbody>
-                {validationItems.map(item => (
+                {validationItems.filter(item => item.issues && item.issues.length > 0).map(item => (
                   <tr key={`val-${item.productId ?? item.wbArticle ?? item.name}`}>
                     <td>{item.name ?? '—'}</td>
                     <td>{item.wbArticle ?? '—'}</td>

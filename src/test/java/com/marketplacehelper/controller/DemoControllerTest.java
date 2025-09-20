@@ -63,6 +63,16 @@ class DemoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.affectedCount").value(5));
     }
+
+    @Test
+    void fillRandomAllReturnsAffected() throws Exception {
+        when(demoDataService.fillRandomAll()).thenReturn(42);
+
+        mockMvc.perform(post("/api/demo/fill-random-all")
+                        .header("Authorization", "Bearer test"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.affected").value(42));
+    }
 }
 
 

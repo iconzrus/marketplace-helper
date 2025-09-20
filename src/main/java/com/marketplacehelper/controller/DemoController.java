@@ -22,4 +22,10 @@ public class DemoController {
         AutoFillResultDto result = demoDataService.autoFillMissingCosts(request);
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/fill-random-all")
+    public ResponseEntity<?> fillRandomAll() {
+        int affected = demoDataService.fillRandomAll();
+        return ResponseEntity.ok(java.util.Map.of("affected", affected));
+    }
 }

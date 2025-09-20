@@ -62,7 +62,7 @@ class ValidationServiceTest {
         ProductValidationDto dto = report.get(0);
         assertThat(dto.isRequiresCorrection()).isTrue();
         assertThat(dto.getIssues()).extracting("field")
-                .contains("purchasePrice", "logisticsCost", "marketingCost", "otherExpenses", "margin");
+                .contains("purchasePrice", "logisticsCost", "marketingCost", "otherExpenses");
         assertThat(dto.getIssues()).anySatisfy(issue -> {
             if (issue.getField().equals("purchasePrice")) {
                 assertThat(issue.getSuggestion()).contains("60%");

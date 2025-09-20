@@ -347,16 +347,7 @@ public class AnalyticsService {
             if (item.getOtherExpenses() == null) {
                 validation.addIssue(new ProductIssueDto("otherExpenses", "Пустое значение", "0 ₽", false));
             }
-            if (item.getMargin() == null) {
-                validation.addIssue(new ProductIssueDto("margin", "Не удалось рассчитать маржу", null, true));
-            } else {
-                if (item.isNegativeMargin()) {
-                    validation.addIssue(new ProductIssueDto("margin", "Маржа отрицательная", "Проверьте закупку/расходы/цену", true));
-                }
-                if (item.isMarginBelowThreshold()) {
-                    validation.addIssue(new ProductIssueDto("marginPercent", "Маржа ниже порога", null, false));
-                }
-            }
+            // Валидация для блока корректировок отражает только полноту данных, без маржинальных предупреждений
 
             validation.setRequiresCorrection(item.isRequiresCorrection());
             result.add(validation);
