@@ -23,6 +23,7 @@ D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\auth
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\model\Product.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\AutoFillRequestDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\repository\ProductRepository.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\config\CorsConfig.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\AnalyticsReportDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\DeleteResultDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\config\WbApiConfig.java
