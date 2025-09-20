@@ -333,6 +333,10 @@ table {
   min-width: 720px;
 }
 
+/* Sticky first columns for better UX */
+td.col-actions, th.col-actions { position: sticky; left: 180px; background: #fff; z-index: 2; }
+td.col-comments, th.col-comments { position: sticky; right: 0; background: #fff; z-index: 2; }
+
 thead {
   background: #f8fafc;
   text-transform: uppercase;

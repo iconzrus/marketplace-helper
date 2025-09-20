@@ -33,9 +33,9 @@ export default function Analytics() {
         <div className="message message--info">Нет загруженных данных.</div>
       ) : (
         <>
-          <div className="table-wrapper">
+          <div className="table-wrapper table-wrapper--compact">
             <h3>Профитные товары</h3>
-            <table>
+            <table className="table table--compact">
               <thead>
                 <tr>
                   <th>Товар</th>
@@ -76,13 +76,14 @@ export default function Analytics() {
             </table>
           </div>
 
-          <div className="table-wrapper">
+          <div className="table-wrapper table-wrapper--compact">
             <h3>Требуют корректировки или сопоставления</h3>
-            <table>
+            <table className="table table--compact">
               <thead>
                 <tr>
                   <th>Товар</th>
                   <th>Артикул</th>
+                  <th className="col-actions">Действия</th>
                   <th className="numeric">Цена</th>
                   <th className="numeric">Закупка</th>
                   <th className="numeric">Логистика</th>
@@ -92,8 +93,7 @@ export default function Analytics() {
                   <th className="numeric">Маржа %</th>
                   <th className="numeric">Остаток (лок.)</th>
                   <th className="numeric">Остаток WB</th>
-                  <th>Комментарии</th>
-                  <th>Действия</th>
+                  <th className="col-comments">Комментарии</th>
                 </tr>
               </thead>
               <tbody>
@@ -106,6 +106,11 @@ export default function Analytics() {
                       </div>
                     </td>
                     <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
+                    <td className="col-actions">
+                      {ctx.__openWhatIf && (
+                        <button className="btn btn--secondary" onClick={() => ctx.__openWhatIf!(item)}>Что если…</button>
+                      )}
+                    </td>
                     <td className="numeric">{ctx.currency(item.wbDiscountPrice ?? item.wbPrice ?? item.localPrice)}</td>
                     <td className="numeric">{ctx.currency(item.purchasePrice)}</td>
                     <td className="numeric">{ctx.currency(item.logisticsCost)}</td>
@@ -115,15 +120,10 @@ export default function Analytics() {
                     <td className={`numeric ${item.marginBelowThreshold ? 'warning' : ''}`}>{ctx.percent(item.marginPercent)}</td>
                     <td className="numeric">{ctx.numberFormat(item.localStock)}</td>
                     <td className="numeric">{ctx.numberFormat(item.wbStock)}</td>
-                    <td>
+                    <td className="col-comments">
                       {item.warnings && item.warnings.length > 0 ? (
                         <ul className="warnings">{item.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
                       ) : '—'}
-                    </td>
-                    <td>
-                      {ctx.__openWhatIf && (
-                        <button className="btn btn--secondary" onClick={() => ctx.__openWhatIf!(item)}>Что если…</button>
-                      )}
                     </td>
                   </tr>
                 ))}
