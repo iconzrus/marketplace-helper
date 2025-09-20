@@ -288,14 +288,22 @@ public class AnalyticsService {
             }
         }
 
-        boolean hasWarnings = !dto.getWarnings().isEmpty();
+        // В MERGED режиме отдельные предупреждения не должны автоматически относить товар к проблемным
         boolean profitable = dto.getMargin() != null
                 && dto.getMarginPercent() != null
                 && dto.getMargin().compareTo(BigDecimal.ZERO) >= 0
-                && dto.getMarginPercent().compareTo(marginThreshold) >= 0
-                && !hasWarnings;
+                && dto.getMarginPercent().compareTo(marginThreshold) >= 0;
         dto.setProfitable(profitable);
-        dto.setRequiresCorrection(hasWarnings);
+
+        boolean requiresCorrection;
+        if (dto.getDataSource() == ProductDataSource.WB_ONLY || dto.getDataSource() == ProductDataSource.LOCAL_ONLY) {
+            // Неполные данные всегда требуют внимания
+            requiresCorrection = true;
+        } else {
+            // Для MERGED используем бизнес-порог маржи, а не любые предупреждения
+            requiresCorrection = !profitable || dto.isNegativeMargin() || dto.isMarginBelowThreshold() || dto.getMargin() == null;
+        }
+        dto.setRequiresCorrection(requiresCorrection);
     }
 
     private void calculateMargins(ProductAnalyticsDto dto) {
