@@ -138,7 +138,7 @@ body {
 
 /* Demo Center */
 .demo-banner { background: var(--bg-emphasis); border: 1px dashed var(--brand-500); color: var(--text-brand); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; }
-.demo-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.demo-toolbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-surface); font-size: 13px; }
 .chip input { margin: 0; }
 .presets { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -471,4 +471,23 @@ code {
   table {
     min-width: 600px;
   }
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.nav a {
+  text-decoration: none;
+  background: var(--brand-50);
+  color: var(--text-brand);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.nav a[aria-current="page"] {
+  background: var(--brand-500);
+  color: var(--text-inverse);
 }
