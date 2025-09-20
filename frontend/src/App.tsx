@@ -112,6 +112,8 @@ const sourceBadge = (value?: ProductAnalytics['dataSource']) => {
 };
 
 export type AppOutletContext = {
+  // Auth
+  authToken: string | null;
   // WB Catalog
   wbProducts: WbProduct[];
   loadingWb: boolean;
@@ -778,6 +780,7 @@ const App = () => {
 
       <div className="route-outlet">
         <Outlet context={{
+          authToken,
           // WB
           wbProducts, loadingWb, useLocalData, setUseLocalData, query, setQuery, brand, setBrand, category, setCategory, minPrice, setMinPrice, maxPrice, setMaxPrice, minDiscount, setMinDiscount, page, setPage, totalPages, pagedProducts, fetchWbProducts, handleSyncWb, fetchAnalytics,
           // Analytics

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useOutletContext } from 'react-router-dom';
+import type { AppOutletContext } from '../App';
 
 type Alert = {
   type: 'LOW_MARGIN' | 'NEGATIVE_MARGIN' | 'LOW_STOCK';
@@ -12,6 +14,7 @@ type Alert = {
 };
 
 export default function Dashboard() {
+  const ctx = useOutletContext<AppOutletContext>();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -19,6 +22,10 @@ export default function Dashboard() {
     const load = async () => {
       try {
         setLoading(true);
+        if (!ctx.authToken) {
+          setAlerts([]);
+          return;
+        }
         const { data } = await axios.get<Alert[]>('/api/alerts');
         setAlerts(data ?? []);
       } catch (e) {
@@ -28,7 +35,7 @@ export default function Dashboard() {
       }
     };
     load();
-  }, []);
+  }, [ctx.authToken]);
 
   const groups = {
     NEGATIVE_MARGIN: alerts.filter(a => a.type === 'NEGATIVE_MARGIN'),
