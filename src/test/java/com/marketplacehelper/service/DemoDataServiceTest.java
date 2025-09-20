@@ -1,0 +1,58 @@
+package com.marketplacehelper.service;
+
+import com.marketplacehelper.dto.AutoFillRequestDto;
+import com.marketplacehelper.dto.AutoFillResultDto;
+import com.marketplacehelper.model.Product;
+import com.marketplacehelper.repository.ProductRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+
+import java.math.BigDecimal;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DataJpaTest
+@Import(DemoDataService.class)
+class DemoDataServiceTest {
+
+    @Autowired
+    private DemoDataService demoDataService;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @BeforeEach
+    void clean() {
+        productRepository.deleteAll();
+    }
+
+    @Test
+    void fillsMissingCostsUsingRules() {
+        Product p = new Product();
+        p.setName("Demo");
+        p.setWbArticle("111");
+        p.setPrice(new BigDecimal("1000"));
+        productRepository.saveAndFlush(p);
+
+        AutoFillRequestDto req = new AutoFillRequestDto();
+        req.setPurchasePercentOfPrice(new BigDecimal("60"));
+        req.setLogisticsFixed(new BigDecimal("70"));
+        req.setMarketingPercentOfPrice(new BigDecimal("8"));
+        req.setOtherFixed(new BigDecimal("0"));
+        req.setOnlyIfMissing(true);
+
+        AutoFillResultDto result = demoDataService.autoFillMissingCosts(req);
+
+        assertThat(result.getAffectedCount()).isEqualTo(1);
+        Product updated = productRepository.findAll().get(0);
+        assertThat(updated.getPurchasePrice()).isEqualByComparingTo(new BigDecimal("600.00"));
+        assertThat(updated.getLogisticsCost()).isEqualByComparingTo(new BigDecimal("70"));
+        assertThat(updated.getMarketingCost()).isEqualByComparingTo(new BigDecimal("80.00"));
+        assertThat(updated.getOtherExpenses()).isEqualByComparingTo(new BigDecimal("0"));
+    }
+}
+
+

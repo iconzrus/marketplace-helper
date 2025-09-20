@@ -47,6 +47,21 @@ interface ProductImportResult {
   errors?: string[];
 }
 
+interface ProductIssue {
+  field: string;
+  reason: string;
+  suggestion?: string;
+  blocking?: boolean;
+}
+
+interface ProductValidationItem {
+  productId?: number;
+  name?: string;
+  wbArticle?: string;
+  requiresCorrection?: boolean;
+  issues: ProductIssue[];
+}
+
 interface WbProduct {
   id?: number;
   nmId?: number;
@@ -120,6 +135,9 @@ const App = () => {
   const [demoMode, setDemoMode] = useState<boolean>(false);
   const [kpiDelta, setKpiDelta] = useState<{ movedToProfit?: number; remainedInFix?: number } | null>(null);
   const [whatIfOpen, setWhatIfOpen] = useState<{ open: boolean; item?: ProductAnalytics }>({ open: false });
+  const [validationItems, setValidationItems] = useState<ProductValidationItem[] | null>(null);
+  const [loadingValidation, setLoadingValidation] = useState(false);
+  const [demoActionLoading, setDemoActionLoading] = useState(false);
 
   const fetchWbStatuses = async () => {
     setWbStatusLoading(true);
@@ -283,6 +301,23 @@ const App = () => {
     }
   };
 
+  const fetchValidation = async (override?: { minMarginPercent?: number }) => {
+    if (!authToken) return;
+    setLoadingValidation(true);
+    try {
+      const appliedMinMargin = override?.minMarginPercent ?? minMarginPercent;
+      const params: Record<string, unknown> = { includeWithoutWb: true };
+      if (appliedMinMargin != null) params.minMarginPercent = appliedMinMargin;
+      const { data } = await axios.get<ProductValidationItem[]>('/api/analytics/validation', { params });
+      setValidationItems(data);
+    } catch (err) {
+      console.error(err);
+      setValidationItems([]);
+    } finally {
+      setLoadingValidation(false);
+    }
+  };
+
   const handleSyncWb = async () => {
     if (!authToken) {
       return;
@@ -312,6 +347,7 @@ const App = () => {
     fetchAnalytics();
     fetchWbProducts();
     fetchWbStatuses();
+    fetchValidation();
   }, [authToken]);
 
   useEffect(() => {
@@ -410,6 +446,33 @@ const App = () => {
     } catch (_) {}
   };
 
+  const runDemoAutofill = async () => {
+    if (!authToken) return;
+    setDemoActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const body: Record<string, unknown> = {
+        purchasePercentOfPrice: 60,
+        logisticsFixed: 70,
+        marketingPercentOfPrice: 8,
+        otherFixed: 0,
+        onlyIfMissing: true,
+        limit: 100
+      };
+      await axios.post('/api/demo/autofill-costs', body);
+      await fetchAnalytics();
+      await fetchValidation();
+      setMessage('Демо‑автозаполнение выполнено. Пересчёт и причины обновлены.');
+    } catch (err) {
+      console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) return;
+      setError('Не удалось выполнить демо‑автозаполнение.');
+    } finally {
+      setDemoActionLoading(false);
+    }
+  };
+
   const openWhatIf = (item: ProductAnalytics) => {
     setWhatIfOpen({ open: true, item });
   };
@@ -436,6 +499,7 @@ const App = () => {
 
   const handleApplyMinMargin = () => {
     fetchAnalytics({ minMarginPercent });
+    fetchValidation({ minMarginPercent });
   };
 
   const handleExport = async () => {
@@ -654,6 +718,66 @@ const App = () => {
 
       <section className="panel">
         <div className="panel__title">
+          <h2>Корректировки: причины и рекомендации</h2>
+          <button className="btn btn--secondary" onClick={() => fetchValidation()} disabled={loadingValidation}>
+            {loadingValidation ? 'Обновление…' : 'Обновить список'}
+          </button>
+        </div>
+        {!validationItems ? (
+          <div className="message message--info">Нет данных о корректировках. Выполните расчёт или загрузите Excel.</div>
+        ) : validationItems.length === 0 ? (
+          <div className="message message--success">Все товары проходят без корректировок.</div>
+        ) : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Товар</th>
+                  <th>Артикул</th>
+                  <th>Проблемы</th>
+                  <th>Рекомендации</th>
+                </tr>
+              </thead>
+              <tbody>
+                {validationItems.map(item => (
+                  <tr key={`val-${item.productId ?? item.wbArticle ?? item.name}`}>
+                    <td>{item.name ?? '—'}</td>
+                    <td>{item.wbArticle ?? '—'}</td>
+                    <td>
+                      {item.issues && item.issues.length > 0 ? (
+                        <ul className="warnings">
+                          {item.issues.map((iss, idx) => (
+                            <li key={idx}>
+                              {iss.blocking && <span className="badge badge--attention" style={{ marginRight: 6 }}>Блокер</span>}
+                              <strong>{iss.field}</strong>: {iss.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td>
+                      {item.issues && item.issues.some(i => i.suggestion) ? (
+                        <ul className="hints">
+                          {item.issues.filter(i => i.suggestion).map((i, idx) => (
+                            <li key={idx}>{i.suggestion}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <div className="panel__title">
           <h2>Демо‑центр</h2>
           <div className="demo-toolbar">
             <label className="chip">
@@ -663,6 +787,9 @@ const App = () => {
               <button className="btn btn--secondary" onClick={() => applyPreset('minimal')}>Пресет: Минимум</button>
               <button className="btn btn--secondary" onClick={() => applyPreset('typical')}>Пресет: Типовой</button>
               <button className="btn btn--secondary" onClick={() => applyPreset('edge')}>Пресет: Сложные кейсы</button>
+              <button className="btn" onClick={runDemoAutofill} disabled={demoActionLoading}>
+                {demoActionLoading ? 'Заполнение…' : 'Автозаполнить недостающие расходы'}
+              </button>
             </div>
           </div>
         </div>
