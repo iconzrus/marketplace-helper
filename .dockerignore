@@ -1,0 +1,20 @@
+# Git
+.git
+.gitignore
+
+# Frontend (not needed in backend image)
+frontend/
+
+# Node
+node_modules/
+**/node_modules/
+
+# Maven/IDE
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+**/.idea/
+**/.vscode/
+
+# OS/others
+*.log
+.DS_Store
