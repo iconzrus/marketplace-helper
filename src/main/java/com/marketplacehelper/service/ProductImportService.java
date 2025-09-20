@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -23,46 +22,6 @@ import java.util.Optional;
 
 @Service
 public class ProductImportService {
-
-    private static final String[] NAME_HEADERS = {
-            "name", "название", "товар"
-    };
-    private static final String[] ARTICLE_HEADERS = {
-            "wb_article", "артикулwb", "артикул", "артикул поставщика", "vendor code",
-            "vendorcode", "код номенклатуры", "nm_id", "nm"
-    };
-    private static final String[] BARCODE_HEADERS = {
-            "wb_barcode", "штрихкод", "barcode", "баркод"
-    };
-    private static final String[] CATEGORY_HEADERS = {
-            "category", "категория", "предмет"
-    };
-    private static final String[] BRAND_HEADERS = {
-            "brand", "бренд"
-    };
-    private static final String[] STOCK_HEADERS = {
-            "stock", "остаток", "stock_quantity", "количество", "кол-во", "колво"
-    };
-    private static final String[] PRICE_HEADERS = {
-        "price", "продажная цена", "цена", "цена розничная",
-        "цена розничная с учетом согласованной скидки",
-        "вайлдберриз реализовал товар (пр)",
-        "выручка", "revenue"
-    };
-    private static final String[] PURCHASE_HEADERS = {
-        "purchase price", "закупка", "purchase_price", "закупочная цена"
-    };
-    private static final String[] LOGISTICS_HEADERS = {
-        "logistics", "логистика", "logistics_cost", "услуги по доставке товара покупателю",
-        "возмещение издержек по перевозке/по складским операциям с товаром"
-    };
-    private static final String[] MARKETING_HEADERS = {
-        "marketing", "маркетинг", "marketing_cost", "реклама"
-    };
-    private static final String[] OTHER_EXPENSE_HEADERS = {
-        "other", "прочие", "other_expenses", "прочие расходы", "штрафы",
-        "общая сумма штрафов"
-    };
 
     private final ProductRepository productRepository;
 
@@ -106,8 +65,8 @@ public class ProductImportService {
                     continue;
                 }
 
-                String name = getString(row, headerMap, formatter, NAME_HEADERS);
-                String wbArticle = getString(row, headerMap, formatter, ARTICLE_HEADERS);
+                String name = getString(row, headerMap, formatter, "name", "название", "товар");
+                String wbArticle = getString(row, headerMap, formatter, "wb_article", "артикулwb", "артикул");
                 if ((name == null || name.isBlank()) && (wbArticle == null || wbArticle.isBlank())) {
                     // пустая строка
                     skipped++;
@@ -125,10 +84,10 @@ public class ProductImportService {
 
                 product.setName(Optional.ofNullable(name).orElse(product.getName()));
                 product.setWbArticle(wbArticle);
-                product.setWbBarcode(getString(row, headerMap, formatter, BARCODE_HEADERS));
-                product.setCategory(getString(row, headerMap, formatter, CATEGORY_HEADERS));
-                product.setBrand(getString(row, headerMap, formatter, BRAND_HEADERS));
-                product.setStockQuantity(getInteger(row, headerMap, formatter, STOCK_HEADERS));
+                product.setWbBarcode(getString(row, headerMap, formatter, "wb_barcode", "штрихкод", "barcode"));
+                product.setCategory(getString(row, headerMap, formatter, "category", "категория"));
+                product.setBrand(getString(row, headerMap, formatter, "brand", "бренд"));
+                product.setStockQuantity(getInteger(row, headerMap, formatter, "stock", "остаток", "stock_quantity"));
 
                 if ((product.getName() == null || product.getName().isBlank()) && wbArticle != null) {
                     product.setName("Товар " + wbArticle);
@@ -136,7 +95,7 @@ public class ProductImportService {
 
                 boolean isNew = product.getId() == null;
 
-                BigDecimal plannedPrice = getDecimal(row, headerMap, formatter, PRICE_HEADERS);
+                BigDecimal plannedPrice = getDecimal(row, headerMap, formatter, "price", "продажнаяцена", "цена");
                 if (plannedPrice != null) {
                     if (plannedPrice.compareTo(BigDecimal.ZERO) <= 0) {
                         errors.add(String.format(Locale.ROOT,
@@ -151,28 +110,28 @@ public class ProductImportService {
                             "Строка %d: не указана цена, установлено значение по умолчанию 1", row.getRowNum() + 1));
                 }
 
-                BigDecimal purchase = getDecimal(row, headerMap, formatter, PURCHASE_HEADERS);
+                BigDecimal purchase = getDecimal(row, headerMap, formatter, "purchaseprice", "закупка", "purchase_price");
                 if (purchase == null) {
                     warnings.add(String.format(Locale.ROOT,
                             "Строка %d: не заполнено поле «Закупка».", row.getRowNum() + 1));
                 }
                 product.setPurchasePrice(purchase);
 
-                BigDecimal logistics = getDecimal(row, headerMap, formatter, LOGISTICS_HEADERS);
+                BigDecimal logistics = getDecimal(row, headerMap, formatter, "logistics", "логистика", "logistics_cost");
                 if (logistics == null) {
                     warnings.add(String.format(Locale.ROOT,
                             "Строка %d: не указаны логистические расходы.", row.getRowNum() + 1));
                 }
                 product.setLogisticsCost(logistics);
 
-                BigDecimal marketing = getDecimal(row, headerMap, formatter, MARKETING_HEADERS);
+                BigDecimal marketing = getDecimal(row, headerMap, formatter, "marketing", "маркетинг", "marketing_cost");
                 if (marketing == null) {
                     warnings.add(String.format(Locale.ROOT,
                             "Строка %d: не указаны маркетинговые расходы.", row.getRowNum() + 1));
                 }
                 product.setMarketingCost(marketing);
 
-                BigDecimal other = getDecimal(row, headerMap, formatter, OTHER_EXPENSE_HEADERS);
+                BigDecimal other = getDecimal(row, headerMap, formatter, "other", "прочие", "other_expenses");
                 if (other == null) {
                     warnings.add(String.format(Locale.ROOT,
                             "Строка %d: не указаны прочие расходы.", row.getRowNum() + 1));
@@ -225,30 +184,8 @@ public class ProductImportService {
         if (cell == null) {
             return null;
         }
-        if (cell.getCellType() == CellType.NUMERIC) {
-            if (DateUtil.isCellDateFormatted(cell)) {
-                String formatted = formatter.formatCellValue(cell);
-                return formatted != null ? formatted.trim() : null;
-            }
-            double numericValue = cell.getNumericCellValue();
-            long rounded = Math.round(numericValue);
-            if (Double.compare(numericValue, rounded) == 0) {
-                return String.valueOf(rounded);
-            }
-        } else if (cell.getCellType() == CellType.FORMULA) {
-            return getStringFromFormula(cell, formatter);
-        }
         String value = formatter.formatCellValue(cell);
-        if (value == null) {
-            return null;
-        }
-        value = value.trim();
-        if (value.endsWith(".0")) {
-            value = value.substring(0, value.length() - 2);
-        } else if (value.endsWith(",0")) {
-            value = value.substring(0, value.length() - 2);
-        }
-        return value.isEmpty() ? null : value;
+        return value != null ? value.trim() : null;
     }
 
     private Integer getInteger(Row row, Map<String, Integer> headerMap, DataFormatter formatter, String... keys) {
@@ -262,15 +199,16 @@ public class ProductImportService {
         }
         if (cell.getCellType() == CellType.NUMERIC) {
             return (int) cell.getNumericCellValue();
-        } else if (cell.getCellType() == CellType.FORMULA) {
-            return switch (cell.getCachedFormulaResultType()) {
-                case NUMERIC -> (int) cell.getNumericCellValue();
-                case STRING -> parseInteger(formatter.formatCellValue(cell));
-                default -> null;
-            };
         }
         String text = formatter.formatCellValue(cell);
-        return parseInteger(text);
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(text.replace(" ", ""));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private BigDecimal getDecimal(Row row, Map<String, Integer> headerMap, DataFormatter formatter, String... keys) {
@@ -284,15 +222,17 @@ public class ProductImportService {
         }
         if (cell.getCellType() == CellType.NUMERIC) {
             return BigDecimal.valueOf(cell.getNumericCellValue()).setScale(2, RoundingMode.HALF_UP);
-        } else if (cell.getCellType() == CellType.FORMULA) {
-            return switch (cell.getCachedFormulaResultType()) {
-                case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue()).setScale(2, RoundingMode.HALF_UP);
-                case STRING -> parseDecimal(formatter.formatCellValue(cell));
-                default -> null;
-            };
         }
         String text = formatter.formatCellValue(cell);
-        return parseDecimal(text);
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        text = text.replace(" ", "").replace("%", "").replace(",", ".");
+        try {
+            return new BigDecimal(text);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private Integer getColumnIndex(Map<String, Integer> headerMap, String... keys) {
@@ -307,59 +247,5 @@ public class ProductImportService {
 
     private String normalize(String value) {
         return value.trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9а-яё]", "");
-    }
-
-    private String getStringFromFormula(Cell cell, DataFormatter formatter) {
-        return switch (cell.getCachedFormulaResultType()) {
-            case NUMERIC -> {
-                double numericValue = cell.getNumericCellValue();
-                long rounded = Math.round(numericValue);
-                if (Double.compare(numericValue, rounded) == 0) {
-                    yield String.valueOf(rounded);
-                }
-                String formatted = formatter.formatCellValue(cell);
-                yield formatted != null && !formatted.isBlank() ? formatted.trim() : null;
-            }
-            case STRING -> {
-                String formatted = formatter.formatCellValue(cell);
-                yield formatted != null && !formatted.isBlank() ? formatted.trim() : null;
-            }
-            default -> null;
-        };
-    }
-
-    private Integer parseInteger(String text) {
-        if (text == null) {
-            return null;
-        }
-        String normalized = text.replace("\u00A0", "").replace(" ", "").trim();
-        if (normalized.isEmpty()) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(normalized);
-        } catch (NumberFormatException ex) {
-            return null;
-        }
-    }
-
-    private BigDecimal parseDecimal(String text) {
-        if (text == null) {
-            return null;
-        }
-        String normalized = text
-                .replace("\u00A0", "")
-                .replace(" ", "")
-                .replace("%", "")
-                .replace(",", ".")
-                .trim();
-        if (normalized.isEmpty()) {
-            return null;
-        }
-        try {
-            return new BigDecimal(normalized);
-        } catch (NumberFormatException ex) {
-            return null;
-        }
     }
 }
