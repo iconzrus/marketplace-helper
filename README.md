@@ -44,7 +44,6 @@ mvn spring-boot:run
 ### 2. Фронтенд
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
 Интерфейс доступен на `http://localhost:5173` (проксируется на бэкенд). Для продакшена: `npm run build` и публикация содержимого `frontend/dist` на любом веб-сервере.

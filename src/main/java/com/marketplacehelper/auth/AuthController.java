@@ -25,7 +25,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest request) {
         return authService.login(request.username(), request.password())
-                .map(ResponseEntity::ok)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of(
                                 "error", "INVALID_CREDENTIALS",
