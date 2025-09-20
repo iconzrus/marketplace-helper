@@ -51,13 +51,10 @@ async function generateShortNameForChunk(api: Api, userInput: string, chunkIndex
   const username = (await getBotUsername(api)).toLowerCase();
   const suffix = `_by_${username}`;
   let base = sanitizeShortNameInput(userInput);
-  // remove existing suffix if present (case-insensitive)
   if (base.toLowerCase().endsWith(suffix)) {
     base = base.slice(0, base.length - suffix.length);
   }
-  // add numeric index before suffix when needed
   const withIndex = chunkIndex === 0 ? base : `${base}_${chunkIndex + 1}`;
-  // ensure total length <= 64
   const maxBaseLen = 64 - suffix.length;
   const truncated = withIndex.slice(0, Math.max(0, maxBaseLen));
   return `${truncated}${suffix}`;
@@ -67,14 +64,10 @@ bot.command("start", async (ctx) => {
   ctx.session = initial();
   await ctx.reply(
     [
-      "Привет! Пришли наборы стикеров, например:",
-      "- shortname: cats_pack_2024",
-      "- ссылка: t.me/addstickers/cats_pack_2024",
-      "Или просто вышли по одному стикеру из нужных наборов — я сам определю имя набора.",
-      "Если нужно собрать набор ИЗ кастомных эмодзи: присылай сообщения с эмодзи и затем /emoji_done (или начни с /emoji).",
-      "Когда закончишь — пришли /done.",
-      "Подсказка: суффикс с именем бота к shortname добавлю автоматически, писать его не нужно.",
-      "Нужно собрать ВСЕ эмодзи из наборов, откуда ты прислал эмодзи? Используй /emoji_full. Только присланные — /emoji_items.",
+      "Привет! Я соберу новый набор из твоих стикеров или эмодзи.",
+      "— Вариант 1 (стикеры): пришли ссылки/шортнеймы наборов или просто стикеры из них, затем /done.",
+      "— Вариант 2 (эмодзи): /emoji (только присланные) или /emoji_full (все из их наборов), пришли эмодзи, затем /emoji_done.",
+      "Шортнейм укажи без суффикса — я сам добавлю `_by_имябота`.",
     ].join("\n")
   );
   ctx.session.stage = "awaiting_sets";
@@ -82,7 +75,7 @@ bot.command("start", async (ctx) => {
 
 bot.command("cancel", async (ctx) => {
   ctx.session = initial();
-  await ctx.reply("Сброшено. Используй /start чтобы начать заново.");
+  await ctx.reply("Готово. Начни заново командой /start.");
 });
 
 bot.on("message:text", async (ctx, next) => {
@@ -95,7 +88,7 @@ bot.on("message:text", async (ctx, next) => {
   if (ctx.session.stage === "awaiting_sets") {
     if (text === "/done" || text === "") {
       if (ctx.session.sourceInputs.length === 0) {
-        await ctx.reply("Нужно указать хотя бы один набор.");
+        await ctx.reply("Нужно добавить хотя бы один набор или стикер.");
         return;
       }
       await loadSourceSets(ctx.api, ctx);
@@ -104,12 +97,12 @@ bot.on("message:text", async (ctx, next) => {
     const normalized = normalizeSetName(text);
     if (!normalized) {
       await ctx.reply(
-        "Это не похоже на имя/ссылку набора. Пришли shortname (например cats_pack_2024), ссылку вида t.me/addstickers/<name> или сам стикер из набора."
+        "Не похоже на имя набора. Пришли ссылку t.me/addstickers/<name>, сам shortname или просто отправь стикер из нужного набора."
       );
       return;
     }
     ctx.session.sourceInputs.push(normalized);
-    await ctx.reply(`Добавлено: ${normalized}. Ещё? /done чтобы продолжить.`);
+    await ctx.reply(`Добавил: ${normalized}. Ещё? /done чтобы продолжить.`);
     return;
   }
 
@@ -117,12 +110,12 @@ bot.on("message:text", async (ctx, next) => {
     ctx.session.selectionQuery = text;
     const parsed = parseSelection(text, ctx.session.sourceSets, ctx.session.selectionMode);
     if (parsed.errors.length) {
-      await ctx.reply(`Ошибки:\n- ${parsed.errors.join("\n- ")}`);
+      await ctx.reply(`Нашёл ошибки:\n- ${parsed.errors.join("\n- ")}`);
       return;
     }
     ctx.session.chosen = parsed.chosen;
     const total = parsed.chosen.length;
-    await ctx.reply(`Выбрано ${total}. Введи заголовок нового набора.`);
+    await ctx.reply(`Выбрано: ${total}. Введи название набора.`);
     ctx.session.stage = "confirm_create";
     return;
   }
@@ -139,20 +132,20 @@ bot.on("message:text", async (ctx, next) => {
       ...collect((ctx.message as any).caption_entities),
     ];
     if (ids.length === 0) {
-      await ctx.reply("Не нашёл кастомных эмодзи в сообщении. Пришли текст с нужными эмодзи или /emoji_done.");
+      await ctx.reply("Не вижу кастомных эмодзи в сообщении. Пришли эмодзи текстом или используй /emoji_done.");
       return;
     }
     const before = ctx.session.customEmojiIds?.length ?? 0;
     ctx.session.customEmojiIds = Array.from(new Set([...(ctx.session.customEmojiIds ?? []), ...ids]));
     const after = ctx.session.customEmojiIds.length;
-    await ctx.reply(`Добавлено эмодзи: +${after - before}. Всего: ${after}. Присылай ещё или /emoji_done.`);
+    await ctx.reply(`Добавил: +${after - before}. Всего: ${after}. Ещё или /emoji_done.`);
     return;
   }
 
   if (ctx.session.stage === "confirm_create") {
     if (!ctx.session.desiredTitle) {
       ctx.session.desiredTitle = text;
-      await ctx.reply("Теперь задай короткое имя (shortname). Я добавлю нужный суффикс автоматически.");
+      await ctx.reply("Теперь введи shortname (без суффикса) — я всё оформлю.");
       return;
     }
     ctx.session.desiredShortName = text;
@@ -171,12 +164,12 @@ bot.on("message:sticker", async (ctx) => {
   const setName: string | undefined = st.set_name || st.sticker_set_name;
   if (!setName) {
     await ctx.reply(
-      "Этот стикер не содержит публичного имени набора. Пришли ссылку t.me/addstickers/<name> или shortname."
+      "Этот стикер без публичного имени набора. Пришли ссылку t.me/addstickers/<name> или shortname."
     );
     return;
   }
   ctx.session.sourceInputs.push(setName);
-  await ctx.reply(`Добавлено: ${setName}. Ещё? /done чтобы продолжить.`);
+  await ctx.reply(`Добавил: ${setName}. Ещё? /done чтобы продолжить.`);
 });
 
 bot.callbackQuery(/mode:(ranges|emojis)/, async (ctx) => {
@@ -185,8 +178,8 @@ bot.callbackQuery(/mode:(ranges|emojis)/, async (ctx) => {
   await ctx.answerCallbackQuery();
   await ctx.editMessageText(
     mode === "ranges"
-      ? "Режим выбора: номера и диапазоны (пример: 1-5,7,10-12). Теперь пришли выбор."
-      : "Режим выбора: эмодзи (пример: :😀,😂). Теперь пришли выбор."
+      ? "Режим: по номерам (пример: 1-5,7,10-12). Пришли выбор."
+      : "Режим: по эмодзи (пример: :😀,😂). Пришли выбор."
   );
   ctx.session.stage = "awaiting_selection";
 });
@@ -202,7 +195,7 @@ bot.command("emoji", async (ctx) => {
   ctx.session.stage = "awaiting_custom_emoji";
   ctx.session.customEmojiIds = [];
   ctx.session.emojiCollectMode = "items";
-  await ctx.reply("Режим эмодзи (только присланные): пришли сообщения с нужными кастомными эмодзи, затем /emoji_done. Для полного набора используй /emoji_full.");
+  await ctx.reply("Режим эмодзи: добавлю только то, что пришлёшь. Пришли эмодзи сообщениями, затем /emoji_done.");
 });
 
 bot.command("emoji_full", async (ctx) => {
@@ -210,7 +203,7 @@ bot.command("emoji_full", async (ctx) => {
   ctx.session.stage = "awaiting_custom_emoji";
   ctx.session.customEmojiIds = [];
   ctx.session.emojiCollectMode = "full_sets";
-  await ctx.reply("Режим эмодзи (полные наборы): пришли сообщения с эмодзи, затем /emoji_done. Будут добавлены ВСЕ эмодзи из их наборов.");
+  await ctx.reply("Режим эмодзи: добавлю ВСЕ эмодзи из наборов, откуда эти эмодзи. Пришли пару эмодзи, затем /emoji_done.");
 });
 
 bot.command("emoji_items", async (ctx) => {
@@ -218,20 +211,20 @@ bot.command("emoji_items", async (ctx) => {
   ctx.session.stage = "awaiting_custom_emoji";
   ctx.session.customEmojiIds = [];
   ctx.session.emojiCollectMode = "items";
-  await ctx.reply("Режим эмодзи (только присланные): пришли сообщения с нужными кастомными эмодзи, затем /emoji_done.");
+  await ctx.reply("Режим эмодзи: только присланные. Пришли эмодзи, затем /emoji_done.");
 });
 
 bot.command("emoji_done", async (ctx) => {
   if (ctx.session.stage !== "awaiting_custom_emoji") {
-    await ctx.reply("Сначала запусти /emoji или /emoji_full и пришли эмодзи.");
+    await ctx.reply("Сначала /emoji или /emoji_full, потом пришли эмодзи.");
     return;
   }
   const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
   if (ids.length === 0) {
-    await ctx.reply("Пока нет эмодзи. Пришли текст с кастомными эмоджи и повтори /emoji_done.");
+    await ctx.reply("Пока нет эмодзи. Пришли текст с эмодзи и повтори /emoji_done.");
     return;
   }
-  await ctx.reply(`Собрано эмодзи: ${ids.length}. Введи заголовок нового набора.`);
+  await ctx.reply(`Собрано: ${ids.length}. Введи название набора.`);
   ctx.session.stage = "confirm_create";
 });
 
@@ -246,12 +239,12 @@ async function loadSourceSets(api: Api, ctx: MyContext) {
       loaded.push({ name: set.name, title: set.title, stickers });
     } catch (e: any) {
       await ctx.reply(
-        `Не удалось получить набор ${name}: ${e.description ?? e.message}. Убедись, что это корректный shortname или отправь стикер из набора.`
+        `Не получилось получить набор ${name}: ${e.description ?? e.message}. Проверь shortname или отправь стикер из набора.`
       );
     }
   }
   if (loaded.length === 0) {
-    await ctx.reply("Не удалось получить ни одного набора. /start чтобы попробовать снова.");
+    await ctx.reply("Не удалось получить ни одного набора. Попробуй /start.");
     ctx.session = initial();
     return;
   }
@@ -275,7 +268,7 @@ async function renderSetsSummary(ctx: MyContext, page: number) {
   if (page < pages) kb.text("▶️", `page:${page + 1}`);
   kb.row().text("Выбор по номерам", "mode:ranges").text("Выбор по эмодзи", "mode:emojis");
   await ctx.reply(
-    `Всего стикеров: ${flat.length}. Страница ${page}/${pages}.\n${text || "(пусто)"}`,
+    `Всего: ${flat.length}. Стр. ${page}/${pages}.\n${text || "(пусто)"}`,
     { reply_markup: kb }
   );
 }
@@ -361,10 +354,10 @@ async function createSetsAndFill(ctx: MyContext) {
   for (const r of results) {
     const url = `t.me/addstickers/${r.shortName}`;
     const skipped = r.skipped.length ? `, пропущено ${r.skipped.length}` : "";
-    lines.push(`${r.title} [${r.format}] — добавлено ${r.added}/${r.total}${skipped}\n${url}`);
+    lines.push(`Готово: ${r.title} — ${r.added}/${r.total}${skipped}\n${url}`);
   }
   if (lines.length === 0) {
-    await ctx.reply("Ничего не создано.");
+    await ctx.reply("Ничего не получилось создать.");
   } else {
     await ctx.reply(lines.join("\n\n"));
   }
@@ -452,12 +445,12 @@ async function createCustomEmojiSets(ctx: MyContext) {
           skipped += 1;
         }
       }
-      results.push(`Создано: ${setTitle} (${short}) — добавлено ${added}/${chunk.length}${skipped ? ", пропущено " + skipped : ""}\nt.me/addstickers/${short}`);
+      results.push(`Готово: ${setTitle} — ${added}/${chunk.length}${skipped ? ", пропущено " + skipped : ""}\nt.me/addstickers/${short}`);
     }
   }
 
   if (results.length === 0) {
-    await ctx.reply("Ничего не создано.");
+    await ctx.reply("Ничего не получилось создать.");
   } else {
     await ctx.reply(results.join("\n\n"));
   }
