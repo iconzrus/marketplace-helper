@@ -22,7 +22,10 @@ public class Product {
     
     @Column(name = "wb_article")
     private String wbArticle;
-    
+
+    @Column(name = "supplier_article")
+    private String supplierArticle;
+
     @Column(name = "wb_barcode")
     private String wbBarcode;
     
@@ -68,6 +71,7 @@ public class Product {
         this();
         this.name = name;
         this.wbArticle = wbArticle;
+        this.supplierArticle = wbArticle;
         this.price = price;
     }
     
@@ -91,9 +95,17 @@ public class Product {
     public String getWbArticle() {
         return wbArticle;
     }
-    
+
     public void setWbArticle(String wbArticle) {
         this.wbArticle = wbArticle;
+    }
+
+    public String getSupplierArticle() {
+        return supplierArticle;
+    }
+
+    public void setSupplierArticle(String supplierArticle) {
+        this.supplierArticle = supplierArticle;
     }
     
     public String getWbBarcode() {
