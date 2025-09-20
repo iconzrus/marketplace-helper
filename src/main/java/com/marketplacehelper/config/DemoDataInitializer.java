@@ -75,6 +75,42 @@ public class DemoDataInitializer {
         backpack.setCategory("Спорт");
         backpack.setBrand("NordHike");
 
-        productRepository.saveAll(List.of(smartphone, headphones, backpack));
+        Product smartwatch = new Product();
+        smartwatch.setName("Умные часы PulseGo");
+        smartwatch.setWbArticle("100004");
+        smartwatch.setPrice(new BigDecimal("12990"));
+        smartwatch.setPurchasePrice(new BigDecimal("8400"));
+        smartwatch.setLogisticsCost(new BigDecimal("950"));
+        smartwatch.setMarketingCost(new BigDecimal("620"));
+        smartwatch.setOtherExpenses(new BigDecimal("350"));
+        smartwatch.setStockQuantity(80);
+        smartwatch.setCategory("Электроника");
+        smartwatch.setBrand("Pulse");
+
+        Product blender = new Product();
+        blender.setName("Погружной блендер KitchenPro 900");
+        blender.setWbArticle("KP-900");
+        blender.setPrice(new BigDecimal("4990"));
+        blender.setPurchasePrice(new BigDecimal("2900"));
+        blender.setLogisticsCost(new BigDecimal("420"));
+        blender.setMarketingCost(new BigDecimal("280"));
+        blender.setOtherExpenses(new BigDecimal("190"));
+        blender.setStockQuantity(55);
+        blender.setCategory("Бытовая техника");
+        blender.setBrand("KitchenPro");
+
+        Product sneakers = new Product();
+        sneakers.setName("Кроссовки Sprint Pro");
+        sneakers.setWbArticle("100007");
+        sneakers.setPrice(new BigDecimal("6290"));
+        sneakers.setPurchasePrice(new BigDecimal("3600"));
+        sneakers.setLogisticsCost(new BigDecimal("410"));
+        sneakers.setMarketingCost(new BigDecimal("320"));
+        sneakers.setOtherExpenses(new BigDecimal("260"));
+        sneakers.setStockQuantity(90);
+        sneakers.setCategory("Спорт");
+        sneakers.setBrand("FastRun");
+
+        productRepository.saveAll(List.of(smartphone, headphones, backpack, smartwatch, blender, sneakers));
     }
 }

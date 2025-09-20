@@ -3,6 +3,9 @@ package com.marketplacehelper.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductAnalyticsDto {
@@ -25,6 +28,12 @@ public class ProductAnalyticsDto {
     private Integer wbStock;
     private BigDecimal margin;
     private BigDecimal marginPercent;
+    private ProductDataSource dataSource;
+    private boolean requiresCorrection;
+    private boolean profitable;
+    private boolean marginBelowThreshold;
+    private boolean negativeMargin;
+    private List<String> warnings;
 
     public Long getProductId() {
         return productId;
@@ -168,5 +177,66 @@ public class ProductAnalyticsDto {
 
     public void setMarginPercent(BigDecimal marginPercent) {
         this.marginPercent = marginPercent;
+    }
+
+    public ProductDataSource getDataSource() {
+        return dataSource;
+    }
+
+    public void setDataSource(ProductDataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    public boolean isRequiresCorrection() {
+        return requiresCorrection;
+    }
+
+    public void setRequiresCorrection(boolean requiresCorrection) {
+        this.requiresCorrection = requiresCorrection;
+    }
+
+    public boolean isProfitable() {
+        return profitable;
+    }
+
+    public void setProfitable(boolean profitable) {
+        this.profitable = profitable;
+    }
+
+    public boolean isMarginBelowThreshold() {
+        return marginBelowThreshold;
+    }
+
+    public void setMarginBelowThreshold(boolean marginBelowThreshold) {
+        this.marginBelowThreshold = marginBelowThreshold;
+    }
+
+    public boolean isNegativeMargin() {
+        return negativeMargin;
+    }
+
+    public void setNegativeMargin(boolean negativeMargin) {
+        this.negativeMargin = negativeMargin;
+    }
+
+    public List<String> getWarnings() {
+        if (warnings == null) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(warnings);
+    }
+
+    public void setWarnings(List<String> warnings) {
+        this.warnings = warnings;
+    }
+
+    public void addWarning(String warning) {
+        if (warning == null || warning.isBlank()) {
+            return;
+        }
+        if (this.warnings == null) {
+            this.warnings = new ArrayList<>();
+        }
+        this.warnings.add(warning);
     }
 }

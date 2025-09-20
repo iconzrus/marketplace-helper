@@ -20,6 +20,30 @@ interface ProductAnalytics {
   wbStock?: number;
   margin?: number;
   marginPercent?: number;
+  dataSource?: 'LOCAL_ONLY' | 'WB_ONLY' | 'MERGED';
+  requiresCorrection?: boolean;
+  profitable?: boolean;
+  marginBelowThreshold?: boolean;
+  negativeMargin?: boolean;
+  warnings?: string[];
+}
+
+interface ProductAnalyticsReport {
+  profitable: ProductAnalytics[];
+  requiresAttention: ProductAnalytics[];
+  allItems: ProductAnalytics[];
+  appliedMinMarginPercent?: number;
+  totalProducts: number;
+  profitableCount: number;
+  requiresAttentionCount: number;
+}
+
+interface ProductImportResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  warnings?: string[];
+  errors?: string[];
 }
 
 interface WbProduct {
@@ -47,22 +71,50 @@ const percent = (value?: number) =>
 const numberFormat = (value?: number) =>
   value != null ? value.toLocaleString('ru-RU') : '—';
 
+const sourceBadge = (value?: ProductAnalytics['dataSource']) => {
+  switch (value) {
+    case 'MERGED':
+      return 'WB + Excel';
+    case 'LOCAL_ONLY':
+      return 'Excel';
+    case 'WB_ONLY':
+      return 'Wildberries';
+    default:
+      return '—';
+  }
+};
+
 const App = () => {
-  const [analytics, setAnalytics] = useState<ProductAnalytics[]>([]);
+  const [analyticsReport, setAnalyticsReport] = useState<ProductAnalyticsReport | null>(null);
   const [wbProducts, setWbProducts] = useState<WbProduct[]>([]);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [loadingWb, setLoadingWb] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<ProductImportResult | null>(null);
+  const [minMarginPercent, setMinMarginPercent] = useState<number | undefined>(undefined);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (override?: { minMarginPercent?: number }) => {
     setLoadingAnalytics(true);
     setError(null);
     try {
-      const { data } = await axios.get<ProductAnalytics[]>('/api/analytics/products', {
-        params: { includeWithoutWb: true }
+      const appliedMinMargin = override?.minMarginPercent ?? minMarginPercent;
+      const params: Record<string, unknown> = {
+        includeWithoutWb: true,
+        includeUnprofitable: true
+      };
+      if (appliedMinMargin != null) {
+        params.minMarginPercent = appliedMinMargin;
+      }
+      const { data } = await axios.get<ProductAnalyticsReport>('/api/analytics/products', {
+        params
       });
-      setAnalytics(data);
+      setAnalyticsReport(data);
+      if (override?.minMarginPercent !== undefined) {
+        setMinMarginPercent(override.minMarginPercent);
+      } else if (minMarginPercent === undefined && data.appliedMinMarginPercent != null) {
+        setMinMarginPercent(Number(data.appliedMinMarginPercent));
+      }
     } catch (err) {
       console.error(err);
       setError('Не удалось получить расчётные данные. Проверьте подключение к бэкенду.');
@@ -103,12 +155,16 @@ const App = () => {
 
     setMessage(null);
     setError(null);
+    setImportResult(null);
 
     try {
-      await axios.post('/api/products/import/excel', formData, {
+      const { data } = await axios.post<ProductImportResult>('/api/products/import/excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setMessage(`Файл «${file.name}» успешно загружен`);
+      setImportResult(data);
+      setMessage(
+        `Файл «${file.name}» загружен. Создано ${data.created}, обновлено ${data.updated}, пропущено ${data.skipped}.`
+      );
       await fetchAnalytics();
     } catch (err) {
       console.error(err);
@@ -117,6 +173,90 @@ const App = () => {
       event.target.value = '';
     }
   };
+
+  const handleMinMarginChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    if (value === '') {
+      setMinMarginPercent(undefined);
+    } else {
+      setMinMarginPercent(Number(value));
+    }
+  };
+
+  const handleApplyMinMargin = () => {
+    fetchAnalytics({ minMarginPercent });
+  };
+
+  const handleExport = () => {
+    const params = new URLSearchParams({ includeWithoutWb: 'true' });
+    if (minMarginPercent != null) {
+      params.append('minMarginPercent', String(minMarginPercent));
+    }
+    window.open(`/api/analytics/products/export?${params.toString()}`, '_blank');
+  };
+
+  const renderAnalyticsRows = (items: ProductAnalytics[]) =>
+    items.map(item => (
+      <tr key={`${item.productId ?? item.wbProductId ?? item.wbArticle}`}>
+        <td>
+          <div className="cell-with-meta">
+            <div>{item.name ?? '—'}</div>
+            <span className="badge">{sourceBadge(item.dataSource)}</span>
+          </div>
+        </td>
+        <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
+        <td>{currency(item.wbDiscountPrice ?? item.wbPrice)}</td>
+        <td>{currency(item.purchasePrice)}</td>
+        <td>{currency(item.logisticsCost)}</td>
+        <td>{currency(item.marketingCost)}</td>
+        <td>{currency(item.otherExpenses)}</td>
+        <td className={item.margin != null && item.margin < 0 ? 'negative' : ''}>{currency(item.margin)}</td>
+        <td
+          className={
+            item.marginPercent != null && (item.marginPercent < 0 || item.marginBelowThreshold)
+              ? 'warning'
+              : ''
+          }
+        >
+          {percent(item.marginPercent)}
+        </td>
+        <td>{numberFormat(item.localStock)}</td>
+        <td>{numberFormat(item.wbStock)}</td>
+      </tr>
+    ));
+
+  const renderAttentionRows = (items: ProductAnalytics[]) =>
+    items.map(item => (
+      <tr key={`attention-${item.productId ?? item.wbProductId ?? item.wbArticle}`}>
+        <td>
+          <div className="cell-with-meta">
+            <div>{item.name ?? '—'}</div>
+            <span className="badge badge--attention">{sourceBadge(item.dataSource)}</span>
+          </div>
+        </td>
+        <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
+        <td>{currency(item.wbDiscountPrice ?? item.wbPrice ?? item.localPrice)}</td>
+        <td>{currency(item.purchasePrice)}</td>
+        <td>{currency(item.logisticsCost)}</td>
+        <td>{currency(item.marketingCost)}</td>
+        <td>{currency(item.otherExpenses)}</td>
+        <td className={item.negativeMargin ? 'negative' : ''}>{currency(item.margin)}</td>
+        <td className={item.marginBelowThreshold ? 'warning' : ''}>{percent(item.marginPercent)}</td>
+        <td>{numberFormat(item.localStock)}</td>
+        <td>{numberFormat(item.wbStock)}</td>
+        <td>
+          {item.warnings && item.warnings.length > 0 ? (
+            <ul className="warnings">
+              {item.warnings.map((warning, index) => (
+                <li key={index}>{warning}</li>
+              ))}
+            </ul>
+          ) : (
+            '—'
+          )}
+        </td>
+      </tr>
+    ));
 
   return (
     <div className="app">
@@ -141,6 +281,26 @@ const App = () => {
         </label>
         {message && <div className="message message--success">{message}</div>}
         {error && <div className="message message--error">{error}</div>}
+        {importResult?.warnings && importResult.warnings.length > 0 && (
+          <div className="message message--warning">
+            <strong>Внимание.</strong>
+            <ul>
+              {importResult.warnings.map((warning, index) => (
+                <li key={index}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {importResult?.errors && importResult.errors.length > 0 && (
+          <div className="message message--error">
+            <strong>Строки пропущены.</strong>
+            <ul>
+              {importResult.errors.map((warning, index) => (
+                <li key={index}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       <section className="panel">
@@ -193,58 +353,102 @@ const App = () => {
       </section>
 
       <section className="panel">
-        <div className="panel__title">
-          <h2>Маржинальность и сопоставление</h2>
-          <button onClick={fetchAnalytics} disabled={loadingAnalytics}>
-            {loadingAnalytics ? 'Пересчёт…' : 'Пересчитать'}
-          </button>
+        <div className="panel__title analytics-header">
+          <div>
+            <h2>Маржинальность и сопоставление</h2>
+            {analyticsReport && (
+              <div className="analytics-summary">
+                <span>Всего позиций: {analyticsReport.totalProducts}</span>
+                <span>Профитных: {analyticsReport.profitableCount}</span>
+                <span>Нуждаются в корректировке: {analyticsReport.requiresAttentionCount}</span>
+              </div>
+            )}
+          </div>
+          <div className="analytics-controls">
+            <label>
+              Порог маржи, %
+              <input
+                type="number"
+                inputMode="decimal"
+                value={minMarginPercent ?? ''}
+                onChange={handleMinMarginChange}
+                placeholder={analyticsReport?.appliedMinMarginPercent?.toString() ?? '—'}
+              />
+            </label>
+            <button onClick={handleApplyMinMargin} disabled={loadingAnalytics}>
+              {loadingAnalytics ? 'Пересчёт…' : 'Применить'}
+            </button>
+            <button onClick={handleExport}>Скачать отчёт</button>
+          </div>
         </div>
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Товар</th>
-                <th>Артикул</th>
-                <th>Цена WB</th>
-                <th>Закупка</th>
-                <th>Логистика</th>
-                <th>Маркетинг</th>
-                <th>Прочие</th>
-                <th>Маржа</th>
-                <th>Маржа %</th>
-                <th>Остаток (лок.)</th>
-                <th>Остаток WB</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loadingAnalytics ? (
-                <tr>
-                  <td colSpan={11}>Расчёт…</td>
-                </tr>
-              ) : analytics.length === 0 ? (
-                <tr>
-                  <td colSpan={11}>Нет загруженных данных.</td>
-                </tr>
-              ) : (
-                analytics.map(item => (
-                  <tr key={`${item.productId ?? item.wbProductId ?? item.wbArticle}`}>
-                    <td>{item.name ?? '—'}</td>
-                    <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
-                    <td>{currency(item.wbDiscountPrice ?? item.wbPrice)}</td>
-                    <td>{currency(item.purchasePrice)}</td>
-                    <td>{currency(item.logisticsCost)}</td>
-                    <td>{currency(item.marketingCost)}</td>
-                    <td>{currency(item.otherExpenses)}</td>
-                    <td className={item.margin != null && item.margin < 0 ? 'negative' : ''}>{currency(item.margin)}</td>
-                    <td className={item.marginPercent != null && item.marginPercent < 0 ? 'negative' : ''}>{percent(item.marginPercent)}</td>
-                    <td>{numberFormat(item.localStock)}</td>
-                    <td>{numberFormat(item.wbStock)}</td>
+        {loadingAnalytics ? (
+          <div className="message message--info">Расчёт…</div>
+        ) : !analyticsReport ? (
+          <div className="message message--info">Нет загруженных данных.</div>
+        ) : (
+          <>
+            <div className="table-wrapper">
+              <h3>Профитные товары</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Товар</th>
+                    <th>Артикул</th>
+                    <th>Цена WB</th>
+                    <th>Закупка</th>
+                    <th>Логистика</th>
+                    <th>Маркетинг</th>
+                    <th>Прочие</th>
+                    <th>Маржа</th>
+                    <th>Маржа %</th>
+                    <th>Остаток (лок.)</th>
+                    <th>Остаток WB</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {analyticsReport.profitable.length === 0 ? (
+                    <tr>
+                      <td colSpan={11}>Нет позиций, проходящих порог маржи. Проверьте данные и загрузите обновления.</td>
+                    </tr>
+                  ) : (
+                    renderAnalyticsRows(analyticsReport.profitable)
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="table-wrapper">
+              <h3>Требуют корректировки или сопоставления</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Товар</th>
+                    <th>Артикул</th>
+                    <th>Цена</th>
+                    <th>Закупка</th>
+                    <th>Логистика</th>
+                    <th>Маркетинг</th>
+                    <th>Прочие</th>
+                    <th>Маржа</th>
+                    <th>Маржа %</th>
+                    <th>Остаток (лок.)</th>
+                    <th>Остаток WB</th>
+                    <th>Комментарии</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analyticsReport.requiresAttention.length === 0 ? (
+                    <tr>
+                      <td colSpan={12}>Ошибок и неполных данных не обнаружено.</td>
+                    </tr>
+                  ) : (
+                    renderAttentionRows(analyticsReport.requiresAttention)
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </section>
     </div>
   );

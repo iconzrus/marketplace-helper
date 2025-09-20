@@ -1,13 +1,12 @@
 package com.marketplacehelper.controller;
 
-import com.marketplacehelper.model.Product;
+import com.marketplacehelper.dto.ProductImportResultDto;
 import com.marketplacehelper.service.ProductImportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -24,8 +23,8 @@ public class ProductImportController {
     @PostMapping("/excel")
     public ResponseEntity<?> importExcel(@RequestParam("file") MultipartFile file) {
         try {
-            List<Product> products = productImportService.importFromExcel(file);
-            return ResponseEntity.status(HttpStatus.CREATED).body(products);
+            ProductImportResultDto result = productImportService.importFromExcel(file);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         } catch (Exception ex) {
