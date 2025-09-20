@@ -83,6 +83,17 @@ class DemoDataServiceTest {
         int createdWb = demoDataService.generateDemo(4, "wb");
         assertThat(createdWb).isEqualTo(4);
     }
+
+    @Test
+    void deleteRandomAndAllWork() {
+        demoDataService.generateDemo(6, "both");
+        com.marketplacehelper.dto.DeleteResultDto partial = demoDataService.deleteRandom(3, false);
+        assertThat(partial.getDeletedProducts() + partial.getDeletedWbProducts()).isGreaterThan(0);
+
+        com.marketplacehelper.dto.DeleteResultDto all = demoDataService.deleteRandom(0, true);
+        assertThat(all.getDeletedProducts()).isGreaterThanOrEqualTo(0);
+        assertThat(all.getDeletedWbProducts()).isGreaterThanOrEqualTo(0);
+    }
 }
 
 

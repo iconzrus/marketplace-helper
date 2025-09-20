@@ -24,6 +24,7 @@ D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\mode
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\AutoFillRequestDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\repository\ProductRepository.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\AnalyticsReportDto.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\DeleteResultDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\config\WbApiConfig.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\AnalyticsController.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\MarketplaceHelperApplication.java

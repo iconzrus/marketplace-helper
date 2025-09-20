@@ -35,4 +35,11 @@ public class DemoController {
         int created = demoDataService.generateDemo(count, type);
         return ResponseEntity.ok(java.util.Map.of("created", created));
     }
+
+    @PostMapping("/delete")
+    public ResponseEntity<?> delete(@RequestParam(name = "count", required = false) Integer count,
+                                    @RequestParam(name = "all", defaultValue = "false") boolean all) {
+        com.marketplacehelper.dto.DeleteResultDto result = demoDataService.deleteRandom(count != null ? count : 0, all);
+        return ResponseEntity.ok(result);
+    }
 }

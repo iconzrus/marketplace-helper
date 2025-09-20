@@ -140,6 +140,8 @@ const App = () => {
   const [demoActionLoading, setDemoActionLoading] = useState(false);
   const [genCount, setGenCount] = useState<string>('10');
   const [genType, setGenType] = useState<'both' | 'excel' | 'wb'>('both');
+  const [delCount, setDelCount] = useState<string>('5');
+  const [delAll, setDelAll] = useState<boolean>(false);
 
   const fetchWbStatuses = async () => {
     setWbStatusLoading(true);
@@ -449,7 +451,7 @@ const App = () => {
   };
 
   const runDemoAutofill = async () => {
-    if (!authToken) return;
+    if (!authToken || !demoMode) return;
     setDemoActionLoading(true);
     setMessage(null);
     setError(null);
@@ -468,7 +470,7 @@ const App = () => {
   };
 
   const runDemoGenerate = async () => {
-    if (!authToken) return;
+    if (!authToken || !demoMode) return;
     setDemoActionLoading(true);
     setMessage(null);
     setError(null);
@@ -483,6 +485,30 @@ const App = () => {
       console.error(err);
       if (axios.isAxiosError(err) && err.response?.status === 401) return;
       setError('Не удалось сгенерировать данные.');
+    } finally {
+      setDemoActionLoading(false);
+    }
+  };
+
+  const runDemoDelete = async () => {
+    if (!authToken || !demoMode) return;
+    setDemoActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const n = Math.max(0, Number(delCount || '0'));
+      const params = new URLSearchParams();
+      if (!delAll) params.set('count', String(n));
+      params.set('all', String(delAll));
+      await axios.post(`/api/demo/delete?${params.toString()}`);
+      await fetchWbProducts();
+      await fetchAnalytics();
+      await fetchValidation();
+      setMessage(delAll ? 'Все данные удалены.' : `Удалено до ${n} позиций в каждом источнике.`);
+    } catch (err) {
+      console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) return;
+      setError('Не удалось удалить данные.');
     } finally {
       setDemoActionLoading(false);
     }
@@ -800,9 +826,7 @@ const App = () => {
             </label>
             <div className="presets">
               <button className="btn btn--secondary" onClick={() => applyPreset('minimal')}>Пресет: Минимум</button>
-              <button className="btn btn--secondary" onClick={() => applyPreset('typical')}>Пресет: Типовой</button>
-              <button className="btn btn--secondary" onClick={() => applyPreset('edge')}>Пресет: Сложные кейсы</button>
-              <button className="btn" onClick={runDemoAutofill} disabled={demoActionLoading}>
+              <button className="btn" onClick={runDemoAutofill} disabled={demoActionLoading || !demoMode}>
                 {demoActionLoading ? 'Заполнение…' : 'Автозаполнить недостающие расходы'}
               </button>
             </div>
@@ -813,14 +837,31 @@ const App = () => {
                 value={genCount}
                 onChange={e => setGenCount(e.target.value)}
                 style={{ width: 180 }}
+                disabled={!demoMode}
               />
-              <select value={genType} onChange={e => setGenType(e.target.value as any)}>
+              <select value={genType} onChange={e => setGenType(e.target.value as any)} disabled={!demoMode}>
                 <option value="both">WB + Excel (поровну)</option>
                 <option value="excel">Только Excel</option>
                 <option value="wb">Только WB</option>
               </select>
-              <button className="btn" onClick={runDemoGenerate} disabled={demoActionLoading}>
+              <button className="btn" onClick={runDemoGenerate} disabled={demoActionLoading || !demoMode}>
                 {demoActionLoading ? 'Генерация…' : 'Сгенерировать'}
+              </button>
+            </div>
+            <div className="gen-controls" style={{ marginTop: 8 }}>
+              <input
+                inputMode="numeric"
+                placeholder="Сколько удалить"
+                value={delCount}
+                onChange={e => setDelCount(e.target.value)}
+                style={{ width: 180 }}
+                disabled={!demoMode || delAll}
+              />
+              <label className="chip">
+                <input type="checkbox" checked={delAll} onChange={e => setDelAll(e.target.checked)} disabled={!demoMode} /> Удалить всё
+              </label>
+              <button className="btn btn--secondary" onClick={runDemoDelete} disabled={demoActionLoading || !demoMode}>
+                {demoActionLoading ? 'Удаление…' : 'Удалить'}
               </button>
             </div>
           </div>

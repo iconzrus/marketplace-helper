@@ -82,6 +82,20 @@ class DemoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(10));
     }
+
+    @Test
+    void deleteEndpointReturnsCounts() throws Exception {
+        com.marketplacehelper.dto.DeleteResultDto dto = new com.marketplacehelper.dto.DeleteResultDto();
+        dto.setDeletedProducts(2);
+        dto.setDeletedWbProducts(3);
+        when(demoDataService.deleteRandom(5, false)).thenReturn(dto);
+
+        mockMvc.perform(post("/api/demo/delete?count=5")
+                        .header("Authorization", "Bearer test"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deletedProducts").value(2))
+                .andExpect(jsonPath("$.deletedWbProducts").value(3));
+    }
 }
 
 

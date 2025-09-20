@@ -309,6 +309,38 @@ public class DemoDataService {
     private Long randomNmId() {
         return 100000000L + Math.abs(rnd.nextLong() % 900000000L);
     }
+
+    @Transactional
+    public com.marketplacehelper.dto.DeleteResultDto deleteRandom(int count, boolean deleteAll) {
+        com.marketplacehelper.dto.DeleteResultDto result = new com.marketplacehelper.dto.DeleteResultDto();
+        if (deleteAll) {
+            int prod = (int) productRepository.count();
+            int wb = (int) wbProductRepository.count();
+            productRepository.deleteAll();
+            wbProductRepository.deleteAll();
+            result.setDeletedProducts(prod);
+            result.setDeletedWbProducts(wb);
+            return result;
+        }
+
+        List<Product> products = productRepository.findAll();
+        List<WbProduct> wbProducts = wbProductRepository.findAll();
+        int toDeleteP = Math.min(count, products.size());
+        int toDeleteW = Math.min(count, wbProducts.size());
+
+        java.util.Collections.shuffle(products, rnd);
+        java.util.Collections.shuffle(wbProducts, rnd);
+
+        if (toDeleteP > 0) {
+            productRepository.deleteAll(products.subList(0, toDeleteP));
+        }
+        if (toDeleteW > 0) {
+            wbProductRepository.deleteAll(wbProducts.subList(0, toDeleteW));
+        }
+        result.setDeletedProducts(toDeleteP);
+        result.setDeletedWbProducts(toDeleteW);
+        return result;
+    }
 }
 
 
