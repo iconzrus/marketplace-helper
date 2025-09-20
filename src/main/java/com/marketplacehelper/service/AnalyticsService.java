@@ -51,7 +51,7 @@ public class AnalyticsService {
 
         Map<String, WbProduct> wbByVendorCode = wbProducts.stream()
                 .filter(product -> product.getVendorCode() != null && !product.getVendorCode().isBlank())
-                .collect(Collectors.toMap(product -> product.getVendorCode().trim(), product -> product, (a, b) -> a));
+                .collect(Collectors.toMap(product -> normalizeVendorCode(product.getVendorCode()), product -> product, (a, b) -> a));
 
         BigDecimal marginThreshold = requestedMinMarginPercent != null
                 ? requestedMinMarginPercent
@@ -98,17 +98,20 @@ public class AnalyticsService {
             return Optional.empty();
         }
         if (product.getWbArticle() != null && !product.getWbArticle().isBlank()) {
-            WbProduct byArticle = wbByArticle.get(product.getWbArticle().trim());
-            if (byArticle == null) {
-                byArticle = wbByVendorCode.get(product.getWbArticle().trim());
-            }
-            if (byArticle == null) {
-                byArticle = parseAsNumber(product.getWbArticle())
-                        .map(number -> wbByArticle.get(String.valueOf(number)))
-                        .orElse(null);
-            }
-            if (byArticle != null) {
-                return Optional.of(byArticle);
+            String normalizedArticle = normalizeArticle(product.getWbArticle());
+            if (!normalizedArticle.isBlank()) {
+                WbProduct byArticle = wbByArticle.get(normalizedArticle);
+                if (byArticle == null) {
+                    byArticle = wbByVendorCode.get(normalizedArticle.toLowerCase(Locale.ROOT));
+                }
+                if (byArticle == null) {
+                    byArticle = parseAsNumber(normalizedArticle)
+                            .map(number -> wbByArticle.get(String.valueOf(number)))
+                            .orElse(null);
+                }
+                if (byArticle != null) {
+                    return Optional.of(byArticle);
+                }
             }
         }
         return Optional.empty();
@@ -118,22 +121,73 @@ public class AnalyticsService {
         if (product.getWbArticle() == null) {
             return false;
         }
-        String article = product.getWbArticle().trim();
-        if (article.isEmpty()) {
+        String normalizedArticle = normalizeArticle(product.getWbArticle());
+        if (normalizedArticle.isBlank()) {
             return false;
         }
-        if (String.valueOf(Optional.ofNullable(wbProduct.getNmId()).orElse(-1L)).equals(article)) {
+
+        Long nmId = wbProduct.getNmId();
+        if (nmId != null && normalizedArticle.equals(String.valueOf(nmId))) {
             return true;
         }
-        return article.equalsIgnoreCase(Optional.ofNullable(wbProduct.getVendorCode()).orElse(""));
+
+        String normalizedVendorCode = normalizeVendorCode(wbProduct.getVendorCode());
+        if (!normalizedVendorCode.isBlank() && normalizedArticle.toLowerCase(Locale.ROOT).equals(normalizedVendorCode)) {
+            return true;
+        }
+
+        return parseAsNumber(normalizedArticle)
+                .map(number -> nmId != null && number.equals(nmId))
+                .orElse(false);
     }
 
     private Optional<Long> parseAsNumber(String value) {
+        if (value == null) {
+            return Optional.empty();
+        }
+        String sanitized = value.trim();
+        if (sanitized.isEmpty()) {
+            return Optional.empty();
+        }
+        String digitsOnly = sanitized.replaceAll("\\s+", "");
+        if (!digitsOnly.chars().allMatch(Character::isDigit)) {
+            return Optional.empty();
+        }
         try {
-            return Optional.of(Long.parseLong(value.trim()));
+            return Optional.of(Long.parseLong(digitsOnly));
         } catch (NumberFormatException ex) {
             return Optional.empty();
         }
+    }
+
+    private String normalizeArticle(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+        String withoutSpaces = trimmed.replaceAll("\\s+", "");
+        if (withoutSpaces.chars().allMatch(Character::isDigit)) {
+            try {
+                return String.valueOf(Long.parseLong(withoutSpaces));
+            } catch (NumberFormatException ex) {
+                return withoutSpaces;
+            }
+        }
+        return withoutSpaces;
+    }
+
+    private String normalizeVendorCode(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+        return trimmed.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
     }
 
     private ProductAnalyticsDto toDto(Product product, WbProduct wbProduct, BigDecimal marginThreshold) {
