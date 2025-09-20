@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { computeMargin } from './utils';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 
 interface ProductAnalytics {
   productId?: number;
@@ -142,6 +143,9 @@ const App = () => {
   const [genType, setGenType] = useState<'both' | 'excel' | 'wb'>('both');
   const [delCount, setDelCount] = useState<string>('5');
   const [delAll, setDelAll] = useState<boolean>(false);
+
+  const location = useLocation();
+  const isRoot = location.pathname === '/';
 
   const fetchWbStatuses = async () => {
     setWbStatusLoading(true);
