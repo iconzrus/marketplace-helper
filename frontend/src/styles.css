@@ -317,6 +317,16 @@ button:not(:disabled):hover {
   overflow-x: auto;
 }
 
+.table-wrapper--compact { padding: 8px; }
+table.table--compact { font-size: 13px; line-height: 1.25; }
+table.table--compact th, table.table--compact td { padding: 6px 8px; white-space: nowrap; }
+
+@media (max-width: 1200px) {
+  .table-wrapper { padding: 8px; }
+  table th, table td { padding: 6px 8px; }
+  .analytics-controls input { width: 80px; }
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

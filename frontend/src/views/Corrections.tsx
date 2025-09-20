@@ -48,11 +48,10 @@ export default function Corrections() {
                   </td>
                   <td>
                     {ctx.__openWhatIf ? (
-                      <button className="btn btn--secondary" onClick={() => ctx.__openWhatIf!({
-                        productId: item.productId,
-                        name: item.name,
-                        wbArticle: item.wbArticle
-                      } as any)}>Что если…</button>
+                      <button className="btn btn--secondary" onClick={() => {
+                        const full = ctx.analyticsReport?.allItems?.find(a => (item.productId && a.productId === item.productId) || (item.wbArticle && a.wbArticle === item.wbArticle));
+                        ctx.__openWhatIf!(full ? full : ({ productId: item.productId, name: item.name, wbArticle: item.wbArticle } as any));
+                      }}>Что если…</button>
                     ) : '—'}
                   </td>
                 </tr>
