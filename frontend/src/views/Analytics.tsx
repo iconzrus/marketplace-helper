@@ -93,6 +93,7 @@ export default function Analytics() {
                   <th className="numeric">Остаток (лок.)</th>
                   <th className="numeric">Остаток WB</th>
                   <th>Комментарии</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -118,6 +119,11 @@ export default function Analytics() {
                       {item.warnings && item.warnings.length > 0 ? (
                         <ul className="warnings">{item.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
                       ) : '—'}
+                    </td>
+                    <td>
+                      {ctx.__openWhatIf && (
+                        <button className="btn btn--secondary" onClick={() => ctx.__openWhatIf!(item)}>Что если…</button>
+                      )}
                     </td>
                   </tr>
                 ))}

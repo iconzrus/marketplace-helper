@@ -801,7 +801,15 @@ const App = () => {
               <h3 className="modal__title">Что если по: {whatIfOpen.item.name ?? whatIfOpen.item.wbArticle}</h3>
               <button className="btn btn--secondary" onClick={() => setWhatIfOpen({ open: false })}>Закрыть</button>
             </div>
-            <WhatIfForm base={whatIfOpen.item} onClose={() => setWhatIfOpen({ open: false })} compute={computeWhatIf} />
+            <WhatIfForm
+              base={whatIfOpen.item}
+              onClose={() => setWhatIfOpen({ open: false })}
+              onApplied={async () => {
+                await fetchAnalytics();
+                await fetchValidation();
+              }}
+              compute={computeWhatIf}
+            />
           </div>
         </div>
       )}
@@ -812,7 +820,7 @@ const App = () => {
 export default App;
 
 // What-if component inline for simplicity
-function WhatIfForm({ base, onClose, compute }: { base: ProductAnalytics; onClose: () => void; compute: (b: ProductAnalytics, c: Partial<ProductAnalytics>) => { margin: number; marginPercent?: number } }) {
+function WhatIfForm({ base, onClose, onApplied, compute }: { base: ProductAnalytics; onClose: () => void; onApplied?: () => Promise<void> | void; compute: (b: ProductAnalytics, c: Partial<ProductAnalytics>) => { margin: number; marginPercent?: number } }) {
   const [price, setPrice] = useState<string>(String(base.wbDiscountPrice ?? base.wbPrice ?? base.localPrice ?? ''));
   const [purchase, setPurchase] = useState<string>(String(base.purchasePrice ?? ''));
   const [logistics, setLogistics] = useState<string>(String(base.logisticsCost ?? ''));
@@ -868,9 +876,8 @@ function WhatIfForm({ base, onClose, compute }: { base: ProductAnalytics; onClos
                   marketingCost: marketing === '' ? null : Number(marketing),
                   otherExpenses: other === '' ? null : Number(other)
                 });
+                if (onApplied) await onApplied();
                 onClose();
-                // naive refresh after apply
-                window.location.hash.includes('/analytics') ? undefined : undefined;
               } catch (e) {}
             }}
           >Применить</button>
