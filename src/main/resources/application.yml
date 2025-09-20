@@ -42,3 +42,6 @@ wb:
 app:
   demo-data:
     enabled: true
+  analytics:
+    min-margin-percent: 15
+    filter-negative-margin: true

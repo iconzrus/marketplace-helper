@@ -1,5 +1,6 @@
 package com.marketplacehelper.service;
 
+import com.marketplacehelper.dto.ProductImportResultDto;
 import com.marketplacehelper.model.Product;
 import com.marketplacehelper.repository.ProductRepository;
 import org.apache.poi.ss.usermodel.*;
@@ -12,7 +13,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class ProductImportService {
@@ -24,7 +30,7 @@ public class ProductImportService {
     }
 
     @Transactional
-    public List<Product> importFromExcel(MultipartFile file) {
+    public ProductImportResultDto importFromExcel(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Файл Excel не загружен");
         }
@@ -37,14 +43,22 @@ public class ProductImportService {
 
             Iterator<Row> rowIterator = sheet.rowIterator();
             if (!rowIterator.hasNext()) {
-                return Collections.emptyList();
+                ProductImportResultDto emptyResult = new ProductImportResultDto();
+                emptyResult.setCreated(0);
+                emptyResult.setUpdated(0);
+                emptyResult.setSkipped(0);
+                return emptyResult;
             }
 
             Row headerRow = rowIterator.next();
             Map<String, Integer> headerMap = buildHeaderMap(headerRow);
             DataFormatter formatter = new DataFormatter();
 
-            List<Product> result = new ArrayList<>();
+            int created = 0;
+            int updated = 0;
+            int skipped = 0;
+            List<String> warnings = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
                 if (row == null) {
@@ -55,6 +69,7 @@ public class ProductImportService {
                 String wbArticle = getString(row, headerMap, formatter, "wb_article", "артикулwb", "артикул");
                 if ((name == null || name.isBlank()) && (wbArticle == null || wbArticle.isBlank())) {
                     // пустая строка
+                    skipped++;
                     continue;
                 }
 
@@ -78,22 +93,70 @@ public class ProductImportService {
                     product.setName("Товар " + wbArticle);
                 }
 
+                boolean isNew = product.getId() == null;
+
                 BigDecimal plannedPrice = getDecimal(row, headerMap, formatter, "price", "продажнаяцена", "цена");
                 if (plannedPrice != null) {
+                    if (plannedPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                        errors.add(String.format(Locale.ROOT,
+                                "Строка %d: цена должна быть больше нуля", row.getRowNum() + 1));
+                        skipped++;
+                        continue;
+                    }
                     product.setPrice(plannedPrice);
                 } else if (product.getPrice() == null) {
                     product.setPrice(BigDecimal.ONE);
+                    warnings.add(String.format(Locale.ROOT,
+                            "Строка %d: не указана цена, установлено значение по умолчанию 1", row.getRowNum() + 1));
                 }
 
-                product.setPurchasePrice(getDecimal(row, headerMap, formatter, "purchaseprice", "закупка", "purchase_price"));
-                product.setLogisticsCost(getDecimal(row, headerMap, formatter, "logistics", "логистика", "logistics_cost"));
-                product.setMarketingCost(getDecimal(row, headerMap, formatter, "marketing", "маркетинг", "marketing_cost"));
-                product.setOtherExpenses(getDecimal(row, headerMap, formatter, "other", "прочие", "other_expenses"));
+                BigDecimal purchase = getDecimal(row, headerMap, formatter, "purchaseprice", "закупка", "purchase_price");
+                if (purchase == null) {
+                    warnings.add(String.format(Locale.ROOT,
+                            "Строка %d: не заполнено поле «Закупка».", row.getRowNum() + 1));
+                }
+                product.setPurchasePrice(purchase);
+
+                BigDecimal logistics = getDecimal(row, headerMap, formatter, "logistics", "логистика", "logistics_cost");
+                if (logistics == null) {
+                    warnings.add(String.format(Locale.ROOT,
+                            "Строка %d: не указаны логистические расходы.", row.getRowNum() + 1));
+                }
+                product.setLogisticsCost(logistics);
+
+                BigDecimal marketing = getDecimal(row, headerMap, formatter, "marketing", "маркетинг", "marketing_cost");
+                if (marketing == null) {
+                    warnings.add(String.format(Locale.ROOT,
+                            "Строка %d: не указаны маркетинговые расходы.", row.getRowNum() + 1));
+                }
+                product.setMarketingCost(marketing);
+
+                BigDecimal other = getDecimal(row, headerMap, formatter, "other", "прочие", "other_expenses");
+                if (other == null) {
+                    warnings.add(String.format(Locale.ROOT,
+                            "Строка %d: не указаны прочие расходы.", row.getRowNum() + 1));
+                }
+                product.setOtherExpenses(other);
 
                 product.setUpdatedAt(java.time.LocalDateTime.now());
-                result.add(productRepository.save(product));
+                productRepository.save(product);
+                if (isNew) {
+                    created++;
+                } else {
+                    updated++;
+                }
             }
 
+            ProductImportResultDto result = new ProductImportResultDto();
+            result.setCreated(created);
+            result.setUpdated(updated);
+            result.setSkipped(skipped);
+            if (!warnings.isEmpty()) {
+                result.setWarnings(List.copyOf(warnings));
+            }
+            if (!errors.isEmpty()) {
+                result.setErrors(List.copyOf(errors));
+            }
             return result;
         } catch (IOException e) {
             throw new IllegalStateException("Ошибка чтения Excel файла: " + e.getMessage(), e);
