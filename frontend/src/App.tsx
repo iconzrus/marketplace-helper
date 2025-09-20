@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { computeMargin } from './utils';
 
 interface ProductAnalytics {
   productId?: number;
@@ -414,14 +415,14 @@ const App = () => {
   };
 
   const computeWhatIf = (base: ProductAnalytics, changes: Partial<ProductAnalytics>) => {
-    const price = (changes.wbDiscountPrice ?? changes.wbPrice ?? base.wbDiscountPrice ?? base.wbPrice ?? base.localPrice) ?? 0;
-    const purchase = changes.purchasePrice ?? base.purchasePrice ?? 0;
-    const logistics = changes.logisticsCost ?? base.logisticsCost ?? 0;
-    const marketing = changes.marketingCost ?? base.marketingCost ?? 0;
-    const other = changes.otherExpenses ?? base.otherExpenses ?? 0;
-    const margin = price - purchase - logistics - marketing - other;
-    const marginPercent = price > 0 ? (margin / price) * 100 : undefined;
-    return { margin, marginPercent };
+    const price = (changes.wbDiscountPrice ?? changes.wbPrice ?? base.wbDiscountPrice ?? base.wbPrice ?? base.localPrice);
+    return computeMargin(
+      price,
+      changes.purchasePrice ?? base.purchasePrice,
+      changes.logisticsCost ?? base.logisticsCost,
+      changes.marketingCost ?? base.marketingCost,
+      changes.otherExpenses ?? base.otherExpenses
+    );
   };
 
   const handleMinMarginChange = (event: ChangeEvent<HTMLInputElement>) => {
