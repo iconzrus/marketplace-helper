@@ -7,7 +7,9 @@ D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\cont
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\service\WbApiStatusService.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\WbApiStatusController.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\ProductDataSource.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\ProductIssueDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\auth\SimpleAuthService.java
+D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\ProductValidationDto.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\WbApiEndpointStatus.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\controller\ProductController.java
 D:\marketplacehelper\marketplace-helper\src\main\java\com\marketplacehelper\dto\WbApiStatusReportDto.java

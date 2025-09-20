@@ -4,6 +4,7 @@ com\marketplacehelper\repository\WbProductRepository.class
 com\marketplacehelper\model\Product.class
 com\marketplacehelper\model\WbProduct.class
 com\marketplacehelper\service\WbApiService$2.class
+com\marketplacehelper\service\AnalyticsService$1.class
 com\marketplacehelper\repository\ProductRepository.class
 com\marketplacehelper\service\ProductService.class
 com\marketplacehelper\config\WbApiConfig$WbApiAuthInterceptor.class

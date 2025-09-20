@@ -3,6 +3,8 @@ package com.marketplacehelper.service;
 import com.marketplacehelper.dto.AnalyticsReportDto;
 import com.marketplacehelper.dto.ProductAnalyticsDto;
 import com.marketplacehelper.dto.ProductDataSource;
+import com.marketplacehelper.dto.ProductIssueDto;
+import com.marketplacehelper.dto.ProductValidationDto;
 import com.marketplacehelper.model.Product;
 import com.marketplacehelper.model.WbProduct;
 import com.marketplacehelper.repository.ProductRepository;
@@ -304,6 +306,62 @@ public class AnalyticsService {
             requiresCorrection = !profitable || dto.isNegativeMargin() || dto.isMarginBelowThreshold() || dto.getMargin() == null;
         }
         dto.setRequiresCorrection(requiresCorrection);
+    }
+
+    public List<ProductValidationDto> buildValidationReport(boolean includeWithoutWb,
+                                                            BigDecimal requestedMinMarginPercent) {
+        AnalyticsReportDto analytics = buildProductAnalyticsReport(includeWithoutWb, requestedMinMarginPercent, true);
+        List<ProductValidationDto> result = new ArrayList<>();
+        for (ProductAnalyticsDto item : analytics.getAllItems()) {
+            ProductValidationDto validation = new ProductValidationDto();
+            validation.setProductId(item.getProductId());
+            validation.setName(item.getName());
+            validation.setWbArticle(item.getWbArticle());
+
+            if (item.getDataSource() == ProductDataSource.WB_ONLY) {
+                validation.addIssue(new ProductIssueDto(
+                        "excelData",
+                        "Нет корпоративных данных — загрузите Excel для сопоставления.",
+                        null,
+                        true
+                ));
+            }
+            if (item.getDataSource() == ProductDataSource.LOCAL_ONLY) {
+                validation.addIssue(new ProductIssueDto(
+                        "wbData",
+                        "Загружено из Excel — нет данных из кабинета WB.",
+                        null,
+                        false
+                ));
+            }
+            if (item.getPurchasePrice() == null) {
+                String suggestion = item.getLocalPrice() != null ? "60% от price" : null;
+                validation.addIssue(new ProductIssueDto("purchasePrice", "Пустое значение", suggestion, true));
+            }
+            if (item.getLogisticsCost() == null) {
+                validation.addIssue(new ProductIssueDto("logisticsCost", "Пустое значение", "70 ₽/шт", true));
+            }
+            if (item.getMarketingCost() == null) {
+                validation.addIssue(new ProductIssueDto("marketingCost", "Пустое значение", "8% от price", false));
+            }
+            if (item.getOtherExpenses() == null) {
+                validation.addIssue(new ProductIssueDto("otherExpenses", "Пустое значение", "0 ₽", false));
+            }
+            if (item.getMargin() == null) {
+                validation.addIssue(new ProductIssueDto("margin", "Не удалось рассчитать маржу", null, true));
+            } else {
+                if (item.isNegativeMargin()) {
+                    validation.addIssue(new ProductIssueDto("margin", "Маржа отрицательная", "Проверьте закупку/расходы/цену", true));
+                }
+                if (item.isMarginBelowThreshold()) {
+                    validation.addIssue(new ProductIssueDto("marginPercent", "Маржа ниже порога", null, false));
+                }
+            }
+
+            validation.setRequiresCorrection(item.isRequiresCorrection());
+            result.add(validation);
+        }
+        return result;
     }
 
     private void calculateMargins(ProductAnalyticsDto dto) {

@@ -2,6 +2,7 @@ package com.marketplacehelper.controller;
 
 import com.marketplacehelper.dto.AnalyticsReportDto;
 import com.marketplacehelper.service.AnalyticsService;
+import com.marketplacehelper.dto.ProductValidationDto;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -47,5 +48,13 @@ public class AnalyticsController {
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .contentLength(report.length)
                 .body(resource);
+    }
+
+    @GetMapping("/validation")
+    public ResponseEntity<java.util.List<ProductValidationDto>> getValidation(
+            @RequestParam(name = "includeWithoutWb", defaultValue = "true") boolean includeWithoutWb,
+            @RequestParam(name = "minMarginPercent", required = false) java.math.BigDecimal minMarginPercent
+    ) {
+        return ResponseEntity.ok(analyticsService.buildValidationReport(includeWithoutWb, minMarginPercent));
     }
 }
