@@ -71,6 +71,31 @@ export default function Dashboard() {
     }
   }, [(ctx as any)?.alerts]);
 
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const currentToken = (ctx as any)?.authToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('mh_auth_token') : null);
+      if (!currentToken) {
+        setAlerts([]);
+        return;
+      }
+      if (typeof (ctx as any)?.fetchAlerts === 'function') {
+        await (ctx as any).fetchAlerts();
+        const list = (ctx as any).alerts as Alert[] | undefined;
+        if (Array.isArray(list)) setAlerts(list);
+      } else {
+        const base = axios.defaults.baseURL || API_BASE_URL || '';
+        const url = base ? `${base.replace(/\/$/, '')}/api/alerts` : '/api/alerts';
+        const { data } = await axios.get<Alert[]>(url, { headers: { Authorization: `Bearer ${currentToken}` } });
+        setAlerts(data ?? []);
+      }
+    } catch (_) {
+      setAlerts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const groups = {
     NEGATIVE_MARGIN: alerts.filter(a => a.type === 'NEGATIVE_MARGIN'),
     LOW_MARGIN: alerts.filter(a => a.type === 'LOW_MARGIN'),
@@ -79,7 +104,12 @@ export default function Dashboard() {
 
   return (
     <section className="panel">
-      <h2>Dashboard</h2>
+      <div className="panel__title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2>Dashboard</h2>
+        <button className="btn btn--secondary" onClick={handleRefresh} disabled={loading}>
+          {loading ? 'Обновление…' : 'Обновить'}
+        </button>
+      </div>
       <div className="kpi-cards">
         <div className="card card--danger">
           <div className="card__title">Отрицательная маржа</div>
