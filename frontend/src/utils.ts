@@ -35,3 +35,4 @@ export function restore<T>(key: string, fallback: T): T {
   try { return JSON.parse(v) as T; } catch { return fallback; }
 }
 
+
