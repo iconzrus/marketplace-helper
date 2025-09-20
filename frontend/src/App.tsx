@@ -118,7 +118,6 @@ const App = () => {
   const [wbStatusLoading, setWbStatusLoading] = useState(false);
 
   const fetchWbStatuses = async () => {
-    if (!authToken) return;
     setWbStatusLoading(true);
     try {
       const { data } = await axios.get<{ checkedAt: string; endpoints: typeof wbStatuses }>('/api/wb-status');

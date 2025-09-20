@@ -2,6 +2,7 @@ package com.marketplacehelper.service;
 
 import com.marketplacehelper.dto.WbApiEndpointStatus;
 import com.marketplacehelper.dto.WbApiStatusReportDto;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -19,21 +20,28 @@ import java.util.Map;
 public class WbApiStatusService {
 
     private final RestTemplate wbRestTemplate;
-    private final WbApiService wbApiService;
+    private final String wbBaseUrl;
 
-    public WbApiStatusService(RestTemplate wbRestTemplate, WbApiService wbApiService) {
+    public WbApiStatusService(RestTemplate wbRestTemplate,
+                              @Value("${wb.api.base-url:https://marketplace-api.wildberries.ru}") String wbBaseUrl) {
         this.wbRestTemplate = wbRestTemplate;
-        this.wbApiService = wbApiService;
+        this.wbBaseUrl = wbBaseUrl;
     }
 
     public WbApiStatusReportDto checkAll() {
         List<WbApiEndpointStatus> statuses = new ArrayList<>();
 
-        // Набор ключевых ручек, которые используем
+        // Ключевые ручки, которые реально вызываются приложением
         Map<String, String> endpoints = new LinkedHashMap<>();
-        endpoints.put("Ping", "/ping");
+        endpoints.put("Ping", absolute("/ping"));
+        endpoints.put("Goods (filter)", absolute("/api/v2/list/goods/filter"));
         endpoints.put("Seller Info", "https://common-api.wildberries.ru/api/v1/seller-info");
-        endpoints.put("Goods (filter)", "/api/v2/list/goods/filter");
+
+        // Базовые домены (root) для общей диагностики доступности
+        endpoints.put("Content API Root", "https://content-api.wildberries.ru");
+        endpoints.put("Statistics API Root", "https://statistics-api.wildberries.ru");
+        endpoints.put("Advert API Root", "https://advert-api.wildberries.ru");
+        endpoints.put("Finance API Root", "https://finance-api.wildberries.ru");
 
         for (Map.Entry<String, String> entry : endpoints.entrySet()) {
             statuses.add(checkEndpoint(entry.getKey(), entry.getValue()));
@@ -45,28 +53,27 @@ public class WbApiStatusService {
         return report;
     }
 
-    private WbApiEndpointStatus checkEndpoint(String name, String pathOrUrl) {
+    private String absolute(String path) {
+        if (path == null) return wbBaseUrl;
+        if (wbBaseUrl.endsWith("/")) {
+            return wbBaseUrl.substring(0, wbBaseUrl.length() - 1) + path;
+        }
+        return wbBaseUrl + path;
+    }
+
+    private WbApiEndpointStatus checkEndpoint(String name, String url) {
         try {
-            ResponseEntity<String> response;
-            if (pathOrUrl.startsWith("http")) {
-                response = wbRestTemplate.exchange(pathOrUrl, HttpMethod.GET, null, new ParameterizedTypeReference<>(){});
-            } else {
-                // используем wbApiService.getGoodsWithPrices() для мок-режима и прямой URL при боевом
-                if ("/api/v2/list/goods/filter".equals(pathOrUrl)) {
-                    wbApiService.getGoodsWithPrices();
-                    return new WbApiEndpointStatus(name, pathOrUrl, "UP", 200, "");
-                }
-                response = wbRestTemplate.exchange(pathOrUrl, HttpMethod.GET, null, new ParameterizedTypeReference<>(){});
-            }
+            ResponseEntity<String> response = wbRestTemplate.exchange(
+                    url, HttpMethod.GET, null, new ParameterizedTypeReference<>(){}
+            );
             int code = response.getStatusCode().value();
             String status = code >= 200 && code < 500 && code != 503 ? "UP" : "DOWN";
-            return new WbApiEndpointStatus(name, pathOrUrl, status, code, null);
+            return new WbApiEndpointStatus(name, url, status, code, null);
         } catch (RestClientException ex) {
             String message = ex.getMessage() != null ? ex.getMessage() : "request failed";
-            // Если явный 503 встречается в сообщении — считаем DOWN, иначе UP (метод исключения)
             String normalized = message.toLowerCase();
             boolean is503 = normalized.contains("503") || normalized.contains("service unavailable");
-            return new WbApiEndpointStatus(name, pathOrUrl, is503 ? "DOWN" : "UP", is503 ? 503 : null, message);
+            return new WbApiEndpointStatus(name, url, is503 ? "DOWN" : "UP", is503 ? 503 : null, message);
         }
     }
 }

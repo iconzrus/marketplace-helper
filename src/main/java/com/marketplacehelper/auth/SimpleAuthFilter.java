@@ -36,7 +36,8 @@ public class SimpleAuthFilter extends OncePerRequestFilter {
         }
         return path.startsWith("/api/auth")
                 || path.equals("/api/health")
-                || path.equals("/api/hello");
+                || path.equals("/api/hello")
+                || path.startsWith("/api/wb-status");
     }
 
     @Override

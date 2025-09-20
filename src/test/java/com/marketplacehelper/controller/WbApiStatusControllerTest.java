@@ -5,6 +5,10 @@ import com.marketplacehelper.dto.WbApiStatusReportDto;
 import com.marketplacehelper.service.WbApiStatusService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -18,7 +22,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(WbApiStatusController.class)
+@WebMvcTest(controllers = WbApiStatusController.class, excludeAutoConfiguration = {
+        SecurityAutoConfiguration.class,
+        SecurityFilterAutoConfiguration.class
+})
+@Import(WbApiStatusControllerTest.TestConfig.class)
 class WbApiStatusControllerTest {
 
     @Autowired
@@ -27,11 +35,28 @@ class WbApiStatusControllerTest {
     @MockBean
     private WbApiStatusService statusService;
 
+    static class TestConfig {
+        @Bean
+        com.marketplacehelper.auth.SimpleAuthService simpleAuthService() {
+            return new com.marketplacehelper.auth.SimpleAuthService() {
+                @Override
+                public boolean isTokenValid(String token) {
+                    return true;
+                }
+            };
+        }
+
+        @Bean
+        com.marketplacehelper.auth.SimpleAuthFilter simpleAuthFilter(com.marketplacehelper.auth.SimpleAuthService authService) {
+            return new com.marketplacehelper.auth.SimpleAuthFilter(authService);
+        }
+    }
+
     @Test
     void returnsStatusReport() throws Exception {
         WbApiStatusReportDto report = new WbApiStatusReportDto();
         report.setCheckedAt(Instant.now());
-        report.setEndpoints(List.of(new WbApiEndpointStatus("Ping", "/ping", "UP", 200, null)));
+        report.setEndpoints(List.of(new WbApiEndpointStatus("Ping", "https://marketplace-api.wildberries.ru/ping", "UP", 200, null)));
         when(statusService.checkAll()).thenReturn(report);
 
         mockMvc.perform(get("/api/wb-status").accept(MediaType.APPLICATION_JSON))
