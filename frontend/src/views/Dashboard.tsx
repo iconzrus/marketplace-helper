@@ -28,31 +28,40 @@ export default function Dashboard() {
   const token = ctx?.authToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('mh_auth_token') : null);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        if (!token) {
-          setAlerts([]);
-          return;
+    let cancelled = false;
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    const loadWithRetry = async () => {
+      setLoading(true);
+      const base = axios.defaults.baseURL || API_BASE_URL || '';
+      const url = base ? `${base.replace(/\/$/, '')}/api/alerts` : '/api/alerts';
+      for (let attempt = 0; attempt < 8 && !cancelled; attempt++) {
+        try {
+          const currentToken = (ctx as any)?.authToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('mh_auth_token') : null);
+          if (!currentToken) {
+            await sleep(200);
+            continue;
+          }
+          if (typeof (ctx as any)?.fetchAlerts === 'function') {
+            await (ctx as any).fetchAlerts();
+            const list = (ctx as any).alerts as Alert[] | undefined;
+            if (Array.isArray(list)) {
+              if (!cancelled) setAlerts(list);
+              break;
+            }
+          } else {
+            const { data } = await axios.get<Alert[]>(url, { headers: { Authorization: `Bearer ${currentToken}` } });
+            if (!cancelled) setAlerts(data ?? []);
+            break;
+          }
+        } catch (e: any) {
+          // 401 / network → подождать и попробовать снова
+          await sleep(300);
         }
-        if (typeof (ctx as any)?.fetchAlerts === 'function') {
-          await (ctx as any).fetchAlerts();
-          const list = (ctx as any).alerts as Alert[] | undefined;
-          if (Array.isArray(list)) setAlerts(list);
-          return;
-        }
-        // Fallback direct fetch if context not provided
-        const base = axios.defaults.baseURL || API_BASE_URL || '';
-        const url = base ? `${base.replace(/\/$/, '')}/api/alerts` : '/api/alerts';
-        const { data } = await axios.get<Alert[]>(url, { headers: { Authorization: `Bearer ${token}` } });
-        setAlerts(data ?? []);
-      } catch (e) {
-        setAlerts([]);
-      } finally {
-        setLoading(false);
       }
+      if (!cancelled) setLoading(false);
     };
-    load();
+    loadWithRetry();
+    return () => { cancelled = true; };
   }, [token]);
 
   // Also subscribe to global alerts from context to keep dashboard in sync after login or demo actions

@@ -23,6 +23,30 @@ const bot = new Bot(token);
 bot.use(session({
     initial,
 }));
+let cachedBotUsername = null;
+async function getBotUsername(api) {
+    if (cachedBotUsername)
+        return cachedBotUsername;
+    const me = await api.getMe();
+    cachedBotUsername = me.username ?? "unknown_bot";
+    return cachedBotUsername;
+}
+function sanitizeShortNameInput(input) {
+    const trimmed = input.trim();
+    const cleaned = trimmed.replace(/[^A-Za-z0-9_]/g, "_");
+    return cleaned.slice(0, 64);
+}
+async function finalizeShortName(api, input) {
+    const base = sanitizeShortNameInput(input);
+    const username = (await getBotUsername(api)).toLowerCase();
+    const suffix = `_by_${username}`;
+    if (base.toLowerCase().endsWith(suffix))
+        return base;
+    // ensure total length <= 64
+    const maxBaseLen = 64 - suffix.length;
+    const truncated = base.slice(0, Math.max(0, maxBaseLen));
+    return `${truncated}${suffix}`;
+}
 bot.command("start", async (ctx) => {
     ctx.session = initial();
     await ctx.reply([
@@ -32,6 +56,7 @@ bot.command("start", async (ctx) => {
         "Или просто вышли по одному стикеру из нужных наборов — я сам определю имя набора.",
         "Если нужно собрать набор ИЗ кастомных эмодзи: присылай сообщения с эмодзи и затем /emoji_done (или начни с /emoji).",
         "Когда закончишь — пришли /done.",
+        "Подсказка: суффикс с именем бота к shortname добавлю автоматически, писать его не нужно.",
     ].join("\n"));
     ctx.session.stage = "awaiting_sets";
 });
@@ -101,7 +126,7 @@ bot.on("message:text", async (ctx, next) => {
     if (ctx.session.stage === "confirm_create") {
         if (!ctx.session.desiredTitle) {
             ctx.session.desiredTitle = text;
-            await ctx.reply("Теперь задай короткое имя (shortname), латиница/нижнее_подчёркивание.");
+            await ctx.reply("Теперь задай короткое имя (shortname). Я добавлю нужный суффикс автоматически.");
             return;
         }
         ctx.session.desiredShortName = text;
@@ -217,7 +242,8 @@ async function createSetsAndFill(ctx) {
     ctx.session.stage = "creating";
     const userId = ctx.from.id;
     const title = ctx.session.desiredTitle;
-    const baseShort = ctx.session.desiredShortName;
+    const baseShortInput = ctx.session.desiredShortName;
+    const baseShort = await finalizeShortName(ctx.api, baseShortInput);
     // Group chosen stickers by format
     const refs = ctx.session.chosen;
     const byFormat = new Map();
@@ -244,7 +270,12 @@ async function createSetsAndFill(ctx) {
                 const firstSticker = firstSet.stickers[first.index];
                 const firstBuf = await downloadFile(ctx.api, firstSticker.fileId);
                 const firstUploaded = await uploadSticker(ctx.api, userId, firstBuf, format);
-                await createSetWithFirst(ctx.api, userId, setTitle, short, firstUploaded, firstSticker.emoji ?? "", format);
+                const inputSticker = { emoji_list: [firstSticker.emoji ?? ""], sticker: firstUploaded };
+                const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
+                await ctx.api.createNewStickerSet(userId, short, setTitle, {
+                    sticker_format,
+                    stickers: [inputSticker],
+                });
                 summary.added += 1;
                 created = true;
             }
@@ -262,7 +293,8 @@ async function createSetsAndFill(ctx) {
                     const st = set.stickers[item.index];
                     const file = await downloadFile(ctx.api, st.fileId);
                     const uploadedId = await uploadSticker(ctx.api, userId, file, format);
-                    await addStickerByFormat(ctx.api, userId, short, uploadedId, st.emoji ?? "", format);
+                    const inputSticker = { emoji_list: [st.emoji ?? ""], sticker: uploadedId };
+                    await ctx.api.addStickerToSet(userId, short, inputSticker);
                     summary.added += 1;
                 }
                 catch (e) {
@@ -287,37 +319,13 @@ async function createSetsAndFill(ctx) {
     }
     ctx.session = initial();
 }
-async function createSetWithFirst(api, userId, title, shortName, uploadedFileId, emoji, format) {
-    const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
-    const inputSticker = { emoji_list: [emoji] };
-    if (format === "static")
-        inputSticker.png_sticker = uploadedFileId;
-    else if (format === "animated")
-        inputSticker.tgs_sticker = uploadedFileId;
-    else
-        inputSticker.webm_sticker = uploadedFileId;
-    // Newer Bot API expects stickers array; grammy supports both forms via extra
-    await api.createNewStickerSet(userId, shortName, title, {
-        sticker_format,
-        stickers: [inputSticker],
-    });
-}
-async function addStickerByFormat(api, userId, shortName, fileId, emoji, format) {
-    const inputSticker = { emoji_list: [emoji] };
-    if (format === "static")
-        inputSticker.png_sticker = fileId;
-    else if (format === "animated")
-        inputSticker.tgs_sticker = fileId;
-    else
-        inputSticker.webm_sticker = fileId;
-    await api.addStickerToSet(userId, shortName, inputSticker);
-}
 async function createCustomEmojiSets(ctx) {
     // Create custom emoji set(s) from collected customEmojiIds
     ctx.session.stage = "creating";
     const userId = ctx.from.id;
     const title = ctx.session.desiredTitle;
-    const baseShort = ctx.session.desiredShortName;
+    const baseShortInput = ctx.session.desiredShortName;
+    const baseShort = await finalizeShortName(ctx.api, baseShortInput);
     const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
     // Fetch Sticker objects for custom emoji ids
     const stickersResp = await ctx.api.getCustomEmojiStickers(ids);
@@ -342,13 +350,7 @@ async function createCustomEmojiSets(ctx) {
             // Create set with first sticker (sticker_type=custom_emoji)
             const first = chunk[0];
             const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
-            const firstInput = { emoji_list: [first.emoji ?? ""] };
-            if (format === "static")
-                firstInput.png_sticker = first.fileId;
-            else if (format === "animated")
-                firstInput.tgs_sticker = first.fileId;
-            else
-                firstInput.webm_sticker = first.fileId;
+            const firstInput = { emoji_list: [first.emoji ?? ""], sticker: first.fileId };
             try {
                 await ctx.api.createNewStickerSet(userId, short, setTitle, {
                     sticker_format,
@@ -363,19 +365,13 @@ async function createCustomEmojiSets(ctx) {
             // Add the rest
             let added = 1;
             for (const it of chunk.slice(1)) {
-                const input = { emoji_list: [it.emoji ?? ""] };
-                if (format === "static")
-                    input.png_sticker = it.fileId;
-                else if (format === "animated")
-                    input.tgs_sticker = it.fileId;
-                else
-                    input.webm_sticker = it.fileId;
+                const input = { emoji_list: [it.emoji ?? ""], sticker: it.fileId };
                 try {
                     await ctx.api.addStickerToSet(userId, short, input);
                     added += 1;
                 }
                 catch (e) {
-                    // continue, but record error
+                    // continue
                 }
             }
             results.push(`Создано: ${setTitle} (${short}) — добавлено ${added}/${chunk.length}\nt.me/addstickers/${short}`);
