@@ -6,6 +6,7 @@ interface ProductAnalytics {
   wbProductId?: number;
   name?: string;
   wbArticle?: string;
+  supplierArticle?: string;
   vendorCode?: string;
   brand?: string;
   category?: string;
@@ -204,7 +205,7 @@ const App = () => {
             <span className="badge">{sourceBadge(item.dataSource)}</span>
           </div>
         </td>
-        <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
+        <td>{item.supplierArticle ?? item.wbArticle ?? item.vendorCode ?? '—'}</td>
         <td>{currency(item.wbDiscountPrice ?? item.wbPrice)}</td>
         <td>{currency(item.purchasePrice)}</td>
         <td>{currency(item.logisticsCost)}</td>
@@ -234,7 +235,7 @@ const App = () => {
             <span className="badge badge--attention">{sourceBadge(item.dataSource)}</span>
           </div>
         </td>
-        <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
+        <td>{item.supplierArticle ?? item.wbArticle ?? item.vendorCode ?? '—'}</td>
         <td>{currency(item.wbDiscountPrice ?? item.wbPrice ?? item.localPrice)}</td>
         <td>{currency(item.purchasePrice)}</td>
         <td>{currency(item.logisticsCost)}</td>

@@ -41,6 +41,7 @@ public class ProductService {
                 .map(product -> {
                     product.setName(productDetails.getName());
                     product.setWbArticle(productDetails.getWbArticle());
+                    product.setSupplierArticle(productDetails.getSupplierArticle());
                     product.setWbBarcode(productDetails.getWbBarcode());
                     product.setPrice(productDetails.getPrice());
                     product.setStockQuantity(productDetails.getStockQuantity());
