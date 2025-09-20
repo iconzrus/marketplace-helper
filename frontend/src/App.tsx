@@ -768,6 +768,7 @@ const App = () => {
         <NavLink to="/corrections">Корректировки</NavLink>
         <NavLink to="/import">Импорт</NavLink>
         <NavLink to="/demo">Демо‑центр</NavLink>
+        <NavLink to="/wb-status">Стабильность WB</NavLink>
       </nav>
 
       {error && <div className="message message--error">{error}</div>}

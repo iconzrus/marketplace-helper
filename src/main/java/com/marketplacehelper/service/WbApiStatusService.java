@@ -67,7 +67,8 @@ public class WbApiStatusService {
                     url, HttpMethod.GET, null, new ParameterizedTypeReference<>(){}
             );
             int code = response.getStatusCode().value();
-            String status = code >= 200 && code < 500 && code != 503 ? "UP" : "DOWN";
+            // Трактуем 401 как доступность сервиса (авторизация не пройдена, но хост жив)
+            String status = (code == 401) ? "UP" : (code >= 200 && code < 500 && code != 503 ? "UP" : "DOWN");
             return new WbApiEndpointStatus(name, url, status, code, null);
         } catch (RestClientException ex) {
             String message = ex.getMessage() != null ? ex.getMessage() : "request failed";

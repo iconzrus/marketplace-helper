@@ -8,6 +8,7 @@ const Analytics = React.lazy(() => import('./views/Analytics'));
 const Corrections = React.lazy(() => import('./views/Corrections'));
 const ImportView = React.lazy(() => import('./views/ImportView'));
 const DemoCenter = React.lazy(() => import('./views/DemoCenter'));
+const WbStatus = React.lazy(() => import('./views/WbStatus'));
 
 export const router = createHashRouter([
   {
@@ -19,7 +20,8 @@ export const router = createHashRouter([
       { path: 'analytics', element: <Analytics /> },
       { path: 'corrections', element: <Corrections /> },
       { path: 'import', element: <ImportView /> },
-      { path: 'demo', element: <DemoCenter /> }
+      { path: 'demo', element: <DemoCenter /> },
+      { path: 'wb-status', element: <WbStatus /> }
     ]
   }
 ]);
