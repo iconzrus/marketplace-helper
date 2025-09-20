@@ -320,6 +320,8 @@ button:not(:disabled):hover {
 .table-wrapper--compact { padding: 8px; }
 table.table--compact { font-size: 13px; line-height: 1.25; }
 table.table--compact th, table.table--compact td { padding: 6px 8px; white-space: nowrap; }
+/* Compact buttons inside dense tables */
+.table--compact .btn { padding: 6px 10px; font-size: 13px; }
 
 @media (max-width: 1200px) {
   .table-wrapper { padding: 8px; }
@@ -339,8 +341,8 @@ table {
 .th-resizable .resizer { position: absolute; top: 0; right: -3px; width: 6px; height: 100%; cursor: col-resize; user-select: none; }
 .th-resizing { cursor: col-resize; }
 
-/* Sticky first columns for better UX */
-td.col-actions, th.col-actions { position: sticky; left: 180px; background: #fff; z-index: 2; }
+/* Keep only comments sticky; actions scroll with table */
+td.col-actions, th.col-actions { position: static; left: auto; background: transparent; z-index: auto; }
 td.col-comments, th.col-comments { position: sticky; right: 0; background: #fff; z-index: 2; }
 
 thead {
