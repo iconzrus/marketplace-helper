@@ -12,6 +12,7 @@ function initial() {
         selectionQuery: "",
         chosen: [],
         customEmojiIds: [],
+        emojiCollectMode: "items",
     };
 }
 const token = process.env.BOT_TOKEN;
@@ -56,6 +57,7 @@ bot.command("start", async (ctx) => {
         "Если нужно собрать набор ИЗ кастомных эмодзи: присылай сообщения с эмодзи и затем /emoji_done (или начни с /emoji).",
         "Когда закончишь — пришли /done.",
         "Подсказка: суффикс с именем бота к shortname добавлю автоматически, писать его не нужно.",
+        "Нужно собрать ВСЕ эмодзи из наборов, откуда ты прислал эмодзи? Используй /emoji_full. Только присланные — /emoji_items.",
     ].join("\n"));
     ctx.session.stage = "awaiting_sets";
 });
@@ -167,11 +169,26 @@ bot.command("emoji", async (ctx) => {
     ctx.session = initial();
     ctx.session.stage = "awaiting_custom_emoji";
     ctx.session.customEmojiIds = [];
-    await ctx.reply("Режим эмодзи: пришли сообщения с нужными кастомными эмодзи, затем /emoji_done.");
+    ctx.session.emojiCollectMode = "items";
+    await ctx.reply("Режим эмодзи (только присланные): пришли сообщения с нужными кастомными эмодзи, затем /emoji_done. Для полного набора используй /emoji_full.");
+});
+bot.command("emoji_full", async (ctx) => {
+    ctx.session = initial();
+    ctx.session.stage = "awaiting_custom_emoji";
+    ctx.session.customEmojiIds = [];
+    ctx.session.emojiCollectMode = "full_sets";
+    await ctx.reply("Режим эмодзи (полные наборы): пришли сообщения с эмодзи, затем /emoji_done. Будут добавлены ВСЕ эмодзи из их наборов.");
+});
+bot.command("emoji_items", async (ctx) => {
+    ctx.session = initial();
+    ctx.session.stage = "awaiting_custom_emoji";
+    ctx.session.customEmojiIds = [];
+    ctx.session.emojiCollectMode = "items";
+    await ctx.reply("Режим эмодзи (только присланные): пришли сообщения с нужными кастомными эмодзи, затем /emoji_done.");
 });
 bot.command("emoji_done", async (ctx) => {
     if (ctx.session.stage !== "awaiting_custom_emoji") {
-        await ctx.reply("Сначала запусти /emoji и пришли эмодзи.");
+        await ctx.reply("Сначала запусти /emoji или /emoji_full и пришли эмодзи.");
         return;
     }
     const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
@@ -314,13 +331,38 @@ async function createCustomEmojiSets(ctx) {
     const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
     const stickersResp = await ctx.api.getCustomEmojiStickers(ids);
     const stickers = stickersResp ?? [];
-    const items = stickers.map((s) => ({
+    // Expand to full sets if requested
+    let expanded = stickers;
+    if (ctx.session.emojiCollectMode === "full_sets") {
+        const setNames = Array.from(new Set(expanded.map((s) => s.set_name || s.sticker_set_name).filter(Boolean)));
+        const full = [];
+        for (const name of setNames) {
+            try {
+                const set = await ctx.api.getStickerSet(name);
+                full.push(...set.stickers);
+            }
+            catch {
+                // ignore
+            }
+        }
+        expanded = full.length ? full : stickers;
+    }
+    const items = expanded.map((s) => ({
         fileId: s.file_id,
         emoji: s.emoji ?? "",
         format: s.is_animated ? "animated" : s.is_video ? "video" : "static",
     }));
-    const byFormat = new Map();
+    // Deduplicate by fileId
+    const seen = new Set();
+    const deduped = [];
     for (const it of items) {
+        if (!seen.has(it.fileId)) {
+            seen.add(it.fileId);
+            deduped.push(it);
+        }
+    }
+    const byFormat = new Map();
+    for (const it of deduped) {
         const list = byFormat.get(it.format) ?? [];
         list.push(it);
         byFormat.set(it.format, list);

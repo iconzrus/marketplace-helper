@@ -49,6 +49,7 @@ export interface SessionData {
   desiredTitle?: string;
   desiredShortName?: string;
   customEmojiIds?: string[]; // collected custom emoji ids from messages
+  emojiCollectMode?: "items" | "full_sets";
 }
 
 export const MAX_STICKERS_PER_SET = 120; // conservative default; API may allow more for video
