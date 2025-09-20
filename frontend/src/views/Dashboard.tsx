@@ -125,7 +125,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h3 style={{ marginTop: 20 }}>Alerts</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 }}>
+        <h3 style={{ margin: 0 }}>Alerts</h3>
+        <button className="btn btn--secondary" onClick={handleRefresh} disabled={loading}>
+          {loading ? 'Обновление…' : 'Обновить'}
+        </button>
+      </div>
       {loading ? (
         <div className="message">Загрузка…</div>
       ) : alerts.length === 0 ? (

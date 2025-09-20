@@ -333,8 +333,10 @@ async function createCustomEmojiSets(ctx) {
             const setTitle = chunkIndex === 0 ? title : `${title} (${chunkIndex + 1})`;
             const first = chunk[0];
             const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
-            const firstInput = { emoji_list: [first.emoji ?? ""], sticker: first.fileId };
             try {
+                const firstBuf = await downloadFile(ctx.api, first.fileId);
+                const firstUploaded = await uploadSticker(ctx.api, userId, firstBuf, format);
+                const firstInput = { emoji_list: [first.emoji ?? ""], sticker: firstUploaded };
                 await ctx.api.createNewStickerSet(userId, short, setTitle, [firstInput], { sticker_format, sticker_type: "custom_emoji" });
             }
             catch (e) {
@@ -342,16 +344,20 @@ async function createCustomEmojiSets(ctx) {
                 continue;
             }
             let added = 1;
+            let skipped = 0;
             for (const it of chunk.slice(1)) {
-                const input = { emoji_list: [it.emoji ?? ""], sticker: it.fileId };
                 try {
+                    const buf = await downloadFile(ctx.api, it.fileId);
+                    const uploaded = await uploadSticker(ctx.api, userId, buf, format);
+                    const input = { emoji_list: [it.emoji ?? ""], sticker: uploaded };
                     await ctx.api.addStickerToSet(userId, short, input);
                     added += 1;
                 }
                 catch (e) {
+                    skipped += 1;
                 }
             }
-            results.push(`Создано: ${setTitle} (${short}) — добавлено ${added}/${chunk.length}\nt.me/addstickers/${short}`);
+            results.push(`Создано: ${setTitle} (${short}) — добавлено ${added}/${chunk.length}${skipped ? ", пропущено " + skipped : ""}\nt.me/addstickers/${short}`);
         }
     }
     if (results.length === 0) {

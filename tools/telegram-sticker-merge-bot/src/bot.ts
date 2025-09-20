@@ -384,9 +384,10 @@ async function createCustomEmojiSets(ctx: MyContext) {
 
       const first = chunk[0];
       const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
-      const firstInput: any = { emoji_list: [first.emoji ?? ""], sticker: first.fileId };
-
       try {
+        const firstBuf = await downloadFile(ctx.api, first.fileId);
+        const firstUploaded = await uploadSticker(ctx.api, userId, firstBuf, format);
+        const firstInput: any = { emoji_list: [first.emoji ?? ""], sticker: firstUploaded };
         await ctx.api.createNewStickerSet(userId, short, setTitle, [firstInput], { sticker_format, sticker_type: "custom_emoji" } as any);
       } catch (e: any) {
         await ctx.reply(`Не удалось создать набор ${setTitle}: ${e.description ?? e.message}`);
@@ -394,15 +395,19 @@ async function createCustomEmojiSets(ctx: MyContext) {
       }
 
       let added = 1;
+      let skipped = 0;
       for (const it of chunk.slice(1)) {
-        const input: any = { emoji_list: [it.emoji ?? ""], sticker: it.fileId };
         try {
+          const buf = await downloadFile(ctx.api, it.fileId);
+          const uploaded = await uploadSticker(ctx.api, userId, buf, format);
+          const input: any = { emoji_list: [it.emoji ?? ""], sticker: uploaded };
           await ctx.api.addStickerToSet(userId, short, input);
           added += 1;
         } catch (e: any) {
+          skipped += 1;
         }
       }
-      results.push(`Создано: ${setTitle} (${short}) — добавлено ${added}/${chunk.length}\nt.me/addstickers/${short}`);
+      results.push(`Создано: ${setTitle} (${short}) — добавлено ${added}/${chunk.length}${skipped ? ", пропущено " + skipped : ""}\nt.me/addstickers/${short}`);
     }
   }
 
