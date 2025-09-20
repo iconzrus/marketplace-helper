@@ -46,6 +46,10 @@ public class ProductService {
                     product.setStockQuantity(productDetails.getStockQuantity());
                     product.setCategory(productDetails.getCategory());
                     product.setBrand(productDetails.getBrand());
+                    product.setPurchasePrice(productDetails.getPurchasePrice());
+                    product.setLogisticsCost(productDetails.getLogisticsCost());
+                    product.setMarketingCost(productDetails.getMarketingCost());
+                    product.setOtherExpenses(productDetails.getOtherExpenses());
                     return productRepository.save(product);
                 })
                 .orElseThrow(() -> new RuntimeException("Товар с ID " + id + " не найден"));
