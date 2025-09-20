@@ -39,8 +39,12 @@ bot.command("cancel", async (ctx) => {
     ctx.session = initial();
     await ctx.reply("Сброшено. Используй /start чтобы начать заново.");
 });
-bot.on("message:text", async (ctx) => {
+bot.on("message:text", async (ctx, next) => {
     const text = ctx.message.text.trim();
+    // Forward bot commands to dedicated handlers, except /done which we handle here
+    if (text.startsWith("/") && text !== "/done") {
+        return await next();
+    }
     if (ctx.session.stage === "awaiting_sets") {
         if (text === "/done" || text === "") {
             if (ctx.session.sourceInputs.length === 0) {

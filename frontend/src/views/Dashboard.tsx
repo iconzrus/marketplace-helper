@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../App';
 
@@ -34,9 +35,16 @@ export default function Dashboard() {
           setAlerts([]);
           return;
         }
-        const { data } = await axios.get<Alert[]>('/api/alerts', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        if (typeof (ctx as any)?.fetchAlerts === 'function') {
+          await (ctx as any).fetchAlerts();
+          const list = (ctx as any).alerts as Alert[] | undefined;
+          if (Array.isArray(list)) setAlerts(list);
+          return;
+        }
+        // Fallback direct fetch if context not provided
+        const base = axios.defaults.baseURL || API_BASE_URL || '';
+        const url = base ? `${base.replace(/\/$/, '')}/api/alerts` : '/api/alerts';
+        const { data } = await axios.get<Alert[]>(url, { headers: { Authorization: `Bearer ${token}` } });
         setAlerts(data ?? []);
       } catch (e) {
         setAlerts([]);
