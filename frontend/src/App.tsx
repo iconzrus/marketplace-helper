@@ -89,10 +89,12 @@ const App = () => {
   const [wbProducts, setWbProducts] = useState<WbProduct[]>([]);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [loadingWb, setLoadingWb] = useState(false);
+  const [syncingWb, setSyncingWb] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ProductImportResult | null>(null);
   const [minMarginPercent, setMinMarginPercent] = useState<number | undefined>(undefined);
+  const [useLocalData, setUseLocalData] = useState<boolean>(true);
 
   const fetchAnalytics = async (override?: { minMarginPercent?: number }) => {
     setLoadingAnalytics(true);
@@ -128,7 +130,7 @@ const App = () => {
     setError(null);
     try {
       const { data } = await axios.get<WbProduct[]>('/api/v2/list/goods/filter', {
-        params: { useLocalData: true }
+        params: { useLocalData }
       });
       setWbProducts(data);
     } catch (err) {
@@ -136,6 +138,22 @@ const App = () => {
       setError('Не удалось получить товары Wildberries.');
     } finally {
       setLoadingWb(false);
+    }
+  };
+
+  const handleSyncWb = async () => {
+    setSyncingWb(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await axios.post('/api/v2/wb-api/sync');
+      setMessage('Синхронизация с WB выполнена.');
+      await fetchWbProducts();
+    } catch (err) {
+      console.error(err);
+      setError('Не удалось синхронизироваться с WB.');
+    } finally {
+      setSyncingWb(false);
     }
   };
 
@@ -170,7 +188,7 @@ const App = () => {
       console.error(err);
       setError('Ошибка при загрузке файла. Убедитесь, что формат соответствует шаблону.');
     } finally {
-      event.target.value = '';
+      (event.target as HTMLInputElement).value = '';
     }
   };
 
@@ -205,23 +223,17 @@ const App = () => {
           </div>
         </td>
         <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
-        <td>{currency(item.wbDiscountPrice ?? item.wbPrice)}</td>
-        <td>{currency(item.purchasePrice)}</td>
-        <td>{currency(item.logisticsCost)}</td>
-        <td>{currency(item.marketingCost)}</td>
-        <td>{currency(item.otherExpenses)}</td>
-        <td className={item.margin != null && item.margin < 0 ? 'negative' : ''}>{currency(item.margin)}</td>
-        <td
-          className={
-            item.marginPercent != null && (item.marginPercent < 0 || item.marginBelowThreshold)
-              ? 'warning'
-              : ''
-          }
-        >
+        <td className="numeric">{currency(item.wbDiscountPrice ?? item.wbPrice)}</td>
+        <td className="numeric">{currency(item.purchasePrice)}</td>
+        <td className="numeric">{currency(item.logisticsCost)}</td>
+        <td className="numeric">{currency(item.marketingCost)}</td>
+        <td className="numeric">{currency(item.otherExpenses)}</td>
+        <td className={`numeric ${item.margin != null && item.margin < 0 ? 'negative' : ''}`}>{currency(item.margin)}</td>
+        <td className={`numeric ${item.marginPercent != null && (item.marginPercent < 0 || item.marginBelowThreshold) ? 'warning' : ''}`}>
           {percent(item.marginPercent)}
         </td>
-        <td>{numberFormat(item.localStock)}</td>
-        <td>{numberFormat(item.wbStock)}</td>
+        <td className="numeric">{numberFormat(item.localStock)}</td>
+        <td className="numeric">{numberFormat(item.wbStock)}</td>
       </tr>
     ));
 
@@ -235,15 +247,15 @@ const App = () => {
           </div>
         </td>
         <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
-        <td>{currency(item.wbDiscountPrice ?? item.wbPrice ?? item.localPrice)}</td>
-        <td>{currency(item.purchasePrice)}</td>
-        <td>{currency(item.logisticsCost)}</td>
-        <td>{currency(item.marketingCost)}</td>
-        <td>{currency(item.otherExpenses)}</td>
-        <td className={item.negativeMargin ? 'negative' : ''}>{currency(item.margin)}</td>
-        <td className={item.marginBelowThreshold ? 'warning' : ''}>{percent(item.marginPercent)}</td>
-        <td>{numberFormat(item.localStock)}</td>
-        <td>{numberFormat(item.wbStock)}</td>
+        <td className="numeric">{currency(item.wbDiscountPrice ?? item.wbPrice ?? item.localPrice)}</td>
+        <td className="numeric">{currency(item.purchasePrice)}</td>
+        <td className="numeric">{currency(item.logisticsCost)}</td>
+        <td className="numeric">{currency(item.marketingCost)}</td>
+        <td className="numeric">{currency(item.otherExpenses)}</td>
+        <td className={`numeric ${item.negativeMargin ? 'negative' : ''}`}>{currency(item.margin)}</td>
+        <td className={`numeric ${item.marginBelowThreshold ? 'warning' : ''}`}>{percent(item.marginPercent)}</td>
+        <td className="numeric">{numberFormat(item.localStock)}</td>
+        <td className="numeric">{numberFormat(item.wbStock)}</td>
         <td>
           {item.warnings && item.warnings.length > 0 ? (
             <ul className="warnings">
@@ -268,6 +280,8 @@ const App = () => {
         </p>
       </header>
 
+      {error && <div className="message message--error">{error}</div>}
+
       <section className="panel">
         <h2>Импорт Excel</h2>
         <p>
@@ -280,7 +294,6 @@ const App = () => {
           <span>Загрузить Excel</span>
         </label>
         {message && <div className="message message--success">{message}</div>}
-        {error && <div className="message message--error">{error}</div>}
         {importResult?.warnings && importResult.warnings.length > 0 && (
           <div className="message message--warning">
             <strong>Внимание.</strong>
@@ -306,9 +319,25 @@ const App = () => {
       <section className="panel">
         <div className="panel__title">
           <h2>Карточки Wildberries</h2>
-          <button onClick={fetchWbProducts} disabled={loadingWb}>
-            {loadingWb ? 'Обновление…' : 'Обновить'}
-          </button>
+          <div className="toolbar">
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={useLocalData}
+                onChange={e => setUseLocalData(e.target.checked)}
+              />
+              Использовать локальные данные
+            </label>
+            <button className="btn btn--secondary" onClick={fetchWbProducts} disabled={loadingWb}>
+              {loadingWb ? 'Обновление…' : 'Обновить товары'}
+            </button>
+            <button className="btn" onClick={handleSyncWb} disabled={syncingWb}>
+              {syncingWb ? 'Синхронизация…' : 'Синхронизировать с WB'}
+            </button>
+            <button className="btn" onClick={() => fetchAnalytics()} disabled={loadingAnalytics}>
+              {loadingAnalytics ? 'Расчёт…' : 'Рассчитать прибыльность'}
+            </button>
+          </div>
         </div>
         <div className="table-wrapper">
           <table>
@@ -318,10 +347,10 @@ const App = () => {
                 <th>Название</th>
                 <th>Бренд</th>
                 <th>Категория</th>
-                <th>Цена</th>
-                <th>Цена со скидкой</th>
-                <th>Скидка</th>
-                <th>Остаток</th>
+                <th className="numeric">Цена</th>
+                <th className="numeric">Цена со скидкой</th>
+                <th className="numeric">Скидка</th>
+                <th className="numeric">Остаток</th>
               </tr>
             </thead>
             <tbody>
@@ -340,10 +369,10 @@ const App = () => {
                     <td>{product.name ?? '—'}</td>
                     <td>{product.brand ?? '—'}</td>
                     <td>{product.category ?? '—'}</td>
-                    <td>{currency(product.price)}</td>
-                    <td>{currency(product.priceWithDiscount ?? product.salePrice)}</td>
-                    <td>{product.discount != null ? `${product.discount}%` : '—'}</td>
-                    <td>{numberFormat(product.totalQuantity)}</td>
+                    <td className="numeric">{currency(product.price)}</td>
+                    <td className="numeric">{currency(product.priceWithDiscount ?? product.salePrice)}</td>
+                    <td className="numeric">{product.discount != null ? `${product.discount}%` : '—'}</td>
+                    <td className="numeric">{numberFormat(product.totalQuantity)}</td>
                   </tr>
                 ))
               )}
@@ -394,15 +423,15 @@ const App = () => {
                   <tr>
                     <th>Товар</th>
                     <th>Артикул</th>
-                    <th>Цена WB</th>
-                    <th>Закупка</th>
-                    <th>Логистика</th>
-                    <th>Маркетинг</th>
-                    <th>Прочие</th>
-                    <th>Маржа</th>
-                    <th>Маржа %</th>
-                    <th>Остаток (лок.)</th>
-                    <th>Остаток WB</th>
+                    <th className="numeric">Цена WB</th>
+                    <th className="numeric">Закупка</th>
+                    <th className="numeric">Логистика</th>
+                    <th className="numeric">Маркетинг</th>
+                    <th className="numeric">Прочие</th>
+                    <th className="numeric">Маржа</th>
+                    <th className="numeric">Маржа %</th>
+                    <th className="numeric">Остаток (лок.)</th>
+                    <th className="numeric">Остаток WB</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -424,15 +453,15 @@ const App = () => {
                   <tr>
                     <th>Товар</th>
                     <th>Артикул</th>
-                    <th>Цена</th>
-                    <th>Закупка</th>
-                    <th>Логистика</th>
-                    <th>Маркетинг</th>
-                    <th>Прочие</th>
-                    <th>Маржа</th>
-                    <th>Маржа %</th>
-                    <th>Остаток (лок.)</th>
-                    <th>Остаток WB</th>
+                    <th className="numeric">Цена</th>
+                    <th className="numeric">Закупка</th>
+                    <th className="numeric">Логистика</th>
+                    <th className="numeric">Маркетинг</th>
+                    <th className="numeric">Прочие</th>
+                    <th className="numeric">Маржа</th>
+                    <th className="numeric">Маржа %</th>
+                    <th className="numeric">Остаток (лок.)</th>
+                    <th className="numeric">Остаток WB</th>
                     <th>Комментарии</th>
                   </tr>
                 </thead>

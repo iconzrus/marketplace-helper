@@ -1,13 +1,39 @@
 :root {
   color-scheme: light dark;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f5f6f8;
-  color: #1c1c1c;
+  --bg-page: #f5f6f8;
+  --bg-surface: #ffffff;
+  --bg-emphasis: #eef2ff;
+  --bg-warning: #fef3c7;
+  --bg-error: #fee2e2;
+  --bg-success: #dcfce7;
+  --bg-info: #dbeafe;
+
+  --text-primary: #1c1c1c;
+  --text-secondary: #4b5563;
+  --text-muted: #334155;
+  --text-inverse: #ffffff;
+  --text-brand: #3730a3;
+  --text-warning: #92400e;
+  --text-error: #7f1d1d;
+  --text-success: #14532d;
+  --text-info: #1d4ed8;
+
+  --brand-500: #4f46e5;
+  --brand-600: #4338ca;
+  --brand-50: #eef2ff;
+  --border: #e2e8f0;
+  --shadow: rgba(15, 23, 42, 0.35);
+  --radius: 12px;
+  --radius-lg: 16px;
+
+  background: var(--bg-page);
+  color: var(--text-primary);
 }
 
 body {
   margin: 0;
-  background: linear-gradient(180deg, #f5f6f8 0%, #ffffff 100%);
+  background: linear-gradient(180deg, var(--bg-page) 0%, #ffffff 100%);
   min-height: 100vh;
 }
 
@@ -32,9 +58,9 @@ body {
 }
 
 .panel {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 12px 24px -16px rgba(15, 23, 42, 0.35);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 24px -16px var(--shadow);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -54,14 +80,14 @@ body {
 }
 
 button {
-  background: #4f46e5;
+  background: var(--brand-500);
   border: none;
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--text-inverse);
   padding: 10px 18px;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 button:disabled {
@@ -70,14 +96,29 @@ button:disabled {
 }
 
 button:not(:disabled):hover {
-  background: #4338ca;
+  background: var(--brand-600);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn--secondary {
+  background: var(--bg-emphasis);
+  color: var(--text-brand);
+}
+
+.btn--destructive {
+  background: #ef4444;
 }
 
 .upload {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  background: #eef2ff;
+  background: var(--brand-50);
   border-radius: 10px;
   padding: 12px 16px;
   cursor: pointer;
@@ -96,25 +137,13 @@ button:not(:disabled):hover {
   font-weight: 500;
 }
 
-.message--success {
-  background: #dcfce7;
-  color: #14532d;
-}
+.message--success { background: var(--bg-success); color: var(--text-success); }
 
-.message--error {
-  background: #fee2e2;
-  color: #7f1d1d;
-}
+.message--error { background: var(--bg-error); color: var(--text-error); }
 
-.message--warning {
-  background: #fef3c7;
-  color: #92400e;
-}
+.message--warning { background: var(--bg-warning); color: var(--text-warning); }
 
-.message--info {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
+.message--info { background: var(--bg-info); color: var(--text-info); }
 
 .table-wrapper {
   overflow-x: auto;
@@ -136,12 +165,15 @@ thead {
 thead th {
   padding: 12px;
   text-align: left;
-  color: #334155;
+  color: var(--text-muted);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 tbody td {
   padding: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
   color: #1e293b;
 }
 
@@ -163,8 +195,8 @@ tr:nth-child(even) td {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #eef2ff;
-  color: #3730a3;
+  background: var(--brand-50);
+  color: var(--text-brand);
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 11px;
@@ -172,16 +204,30 @@ tr:nth-child(even) td {
   letter-spacing: 0.05em;
 }
 
-.badge--attention {
-  background: #fef3c7;
-  color: #92400e;
-}
+.badge--attention { background: var(--bg-warning); color: var(--text-warning); }
 
 .cell-with-meta {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.numeric { text-align: right; font-variant-numeric: tabular-nums; }
 
 .analytics-header {
   flex-wrap: wrap;
