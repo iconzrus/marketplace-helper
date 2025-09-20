@@ -14,19 +14,29 @@ type Alert = {
 };
 
 export default function Dashboard() {
-  const ctx = useOutletContext<AppOutletContext>();
+  const ctx = (() => {
+    try {
+      return useOutletContext<AppOutletContext>();
+    } catch (_) {
+      return undefined as unknown as AppOutletContext;
+    }
+  })();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const token = ctx?.authToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('mh_auth_token') : null);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        if (!ctx.authToken) {
+        if (!token) {
           setAlerts([]);
           return;
         }
-        const { data } = await axios.get<Alert[]>('/api/alerts');
+        const { data } = await axios.get<Alert[]>('/api/alerts', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setAlerts(data ?? []);
       } catch (e) {
         setAlerts([]);
@@ -35,7 +45,7 @@ export default function Dashboard() {
       }
     };
     load();
-  }, [ctx.authToken]);
+  }, [token]);
 
   const groups = {
     NEGATIVE_MARGIN: alerts.filter(a => a.type === 'NEGATIVE_MARGIN'),
