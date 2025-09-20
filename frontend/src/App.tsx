@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } fro
 import axios from 'axios';
 import { computeMargin } from './utils';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { API_BASE_URL } from './config';
 
 interface ProductAnalytics {
   productId?: number;
@@ -157,21 +158,9 @@ export type AppOutletContext = {
 };
 
 const App = () => {
-  const initialApiBase =
-    (typeof window !== 'undefined' && (window as any).__APP_CONFIG__?.apiBaseUrl) ||
-    (import.meta as any).env?.VITE_API_BASE_URL ||
-    (typeof window !== 'undefined' ? localStorage.getItem('mh_api_base_url') || '' : '');
-
-  const [apiBaseUrl, setApiBaseUrl] = useState<string>(initialApiBase);
   useEffect(() => {
-    if (apiBaseUrl) {
-      axios.defaults.baseURL = apiBaseUrl;
-      localStorage.setItem('mh_api_base_url', apiBaseUrl);
-    } else {
-      axios.defaults.baseURL = '';
-      localStorage.removeItem('mh_api_base_url');
-    }
-  }, [apiBaseUrl]);
+    axios.defaults.baseURL = API_BASE_URL || '';
+  }, []);
   const [analyticsReport, setAnalyticsReport] = useState<ProductAnalyticsReport | null>(null);
   const [wbProducts, setWbProducts] = useState<WbProduct[]>([]);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
@@ -735,17 +724,6 @@ const App = () => {
           <section className="panel auth-panel">
             <h2>Вход в систему</h2>
             <p>Укажите логин и пароль, чтобы открыть рабочий кабинет и управлять товарами Wildberries.</p>
-            <div className="runtime-config" style={{ marginBottom: 12 }}>
-              <label>
-                <span>API Base URL (для GitHub Pages / туннеля)</span>
-                <input
-                  placeholder="https://<твой‑туннель>/"
-                  value={apiBaseUrl}
-                  onChange={e => setApiBaseUrl(e.target.value.trim())}
-                />
-              </label>
-              <small>Напр.: https://mh-helper-iconzrus.loca.lt или https://your-sub.ngrok.io</small>
-            </div>
             {authError && <div className="message message--error">{authError}</div>}
             <form className="auth-form" onSubmit={handleLogin}>
               <label>
