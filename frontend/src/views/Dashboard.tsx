@@ -32,7 +32,7 @@ export default function Dashboard() {
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     const loadWithRetry = async () => {
       setLoading(true);
-      const base = axios.defaults.baseURL || API_BASE_URL || '';
+      const base = (axios as any)?.defaults?.baseURL || API_BASE_URL || '';
       const url = base ? `${base.replace(/\/$/, '')}/api/alerts` : '/api/alerts';
       for (let attempt = 0; attempt < 8 && !cancelled; attempt++) {
         try {
@@ -84,7 +84,7 @@ export default function Dashboard() {
         const list = (ctx as any).alerts as Alert[] | undefined;
         if (Array.isArray(list)) setAlerts(list);
       } else {
-        const base = axios.defaults.baseURL || API_BASE_URL || '';
+        const base = (axios as any)?.defaults?.baseURL || API_BASE_URL || '';
         const url = base ? `${base.replace(/\/$/, '')}/api/alerts` : '/api/alerts';
         const { data } = await axios.get<Alert[]>(url, { headers: { Authorization: `Bearer ${currentToken}` } });
         setAlerts(data ?? []);

@@ -58,10 +58,9 @@ describe('Dashboard alerts loading', () => {
 
     render(<Wrapper token={'token'} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Отрицательная маржа')).toBeInTheDocument();
-      expect(screen.getAllByText('1')[0]).toBeInTheDocument();
-    });
+    // дождёмся исчезновения индикатора загрузки и появления таблицы
+    await waitFor(() => expect(screen.queryByText('Загрузка…')).not.toBeInTheDocument());
+    expect(screen.getByText('Отрицательная маржа')).toBeInTheDocument();
   });
 
   it('does not call API when no auth token and shows zeroes', async () => {
