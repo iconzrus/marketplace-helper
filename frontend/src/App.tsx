@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 
 interface ProductAnalytics {
@@ -95,6 +95,14 @@ const App = () => {
   const [importResult, setImportResult] = useState<ProductImportResult | null>(null);
   const [minMarginPercent, setMinMarginPercent] = useState<number | undefined>(undefined);
   const [useLocalData, setUseLocalData] = useState<boolean>(true);
+  const [query, setQuery] = useState('');
+  const [brand, setBrand] = useState('');
+  const [category, setCategory] = useState('');
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [minDiscount, setMinDiscount] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const fetchAnalytics = async (override?: { minMarginPercent?: number }) => {
     setLoadingAnalytics(true);
@@ -129,9 +137,14 @@ const App = () => {
     setLoadingWb(true);
     setError(null);
     try {
-      const { data } = await axios.get<WbProduct[]>('/api/v2/list/goods/filter', {
-        params: { useLocalData }
-      });
+      const params: Record<string, unknown> = { useLocalData };
+      if (query) params.name = query;
+      if (brand) params.brand = brand;
+      if (category) params.category = category;
+      if (minPrice) params.minPrice = minPrice;
+      if (maxPrice) params.maxPrice = maxPrice;
+      if (minDiscount) params.minDiscount = minDiscount;
+      const { data } = await axios.get<WbProduct[]>('/api/v2/list/goods/filter', { params });
       setWbProducts(data);
     } catch (err) {
       console.error(err);
@@ -161,6 +174,29 @@ const App = () => {
     fetchAnalytics();
     fetchWbProducts();
   }, []);
+
+  // Persist settings (theme omitted here, can be added via class on <html>)
+  useEffect(() => {
+    const storedLocal = localStorage.getItem('mh_useLocalData');
+    const storedMinMargin = localStorage.getItem('mh_minMarginPercent');
+    if (storedLocal != null) setUseLocalData(storedLocal === 'true');
+    if (storedMinMargin != null) setMinMarginPercent(Number(storedMinMargin));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('mh_useLocalData', String(useLocalData));
+  }, [useLocalData]);
+
+  useEffect(() => {
+    if (minMarginPercent != null) localStorage.setItem('mh_minMarginPercent', String(minMarginPercent));
+  }, [minMarginPercent]);
+
+  const filteredProducts = useMemo(() => wbProducts, [wbProducts]);
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const pagedProducts = useMemo(
+    () => filteredProducts.slice((page - 1) * pageSize, page * pageSize),
+    [filteredProducts, page]
+  );
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -328,6 +364,42 @@ const App = () => {
               />
               Использовать локальные данные
             </label>
+            <input
+              placeholder="Поиск по названию"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
+            <input
+              placeholder="Бренд"
+              value={brand}
+              onChange={e => setBrand(e.target.value)}
+            />
+            <input
+              placeholder="Категория"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            />
+            <input
+              placeholder="Мин. цена"
+              inputMode="decimal"
+              value={minPrice}
+              onChange={e => setMinPrice(e.target.value)}
+              style={{ width: 100 }}
+            />
+            <input
+              placeholder="Макс. цена"
+              inputMode="decimal"
+              value={maxPrice}
+              onChange={e => setMaxPrice(e.target.value)}
+              style={{ width: 110 }}
+            />
+            <input
+              placeholder="Мин. скидка, %"
+              inputMode="numeric"
+              value={minDiscount}
+              onChange={e => setMinDiscount(e.target.value)}
+              style={{ width: 130 }}
+            />
             <button className="btn btn--secondary" onClick={fetchWbProducts} disabled={loadingWb}>
               {loadingWb ? 'Обновление…' : 'Обновить товары'}
             </button>
@@ -363,7 +435,7 @@ const App = () => {
                   <td colSpan={8}>Нет данных. Попробуйте импортировать или синхронизировать товары.</td>
                 </tr>
               ) : (
-                wbProducts.map(product => (
+                pagedProducts.map(product => (
                   <tr key={`${product.nmId ?? product.id ?? product.vendorCode}`}>
                     <td>{product.nmId ?? product.vendorCode ?? '—'}</td>
                     <td>{product.name ?? '—'}</td>
@@ -378,6 +450,17 @@ const App = () => {
               )}
             </tbody>
           </table>
+          {!loadingWb && wbProducts.length > 0 && (
+            <div className="pagination">
+              <span className="page-info">
+                Стр. {page} из {totalPages}
+              </span>
+              <button onClick={() => setPage(1)} disabled={page === 1}>⏮</button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Назад</button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Вперёд</button>
+              <button onClick={() => setPage(totalPages)} disabled={page === totalPages}>⏭</button>
+            </div>
+          )}
         </div>
       </section>
 
