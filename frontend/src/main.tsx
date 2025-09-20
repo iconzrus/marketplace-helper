@@ -7,6 +7,8 @@ import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <React.Suspense fallback={<div className="panel" style={{margin: 16}}>Загрузка…</div>}>
+      <RouterProvider router={router} />
+    </React.Suspense>
   </React.StrictMode>
 );
