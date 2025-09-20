@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../App';
 
 export default function WbCatalog() {
   const ctx = useOutletContext<AppOutletContext>();
+  const [recs, setRecs] = useState<Record<string, { recommendedPrice: number; delta: number; target: number }>>({});
+  const [targetMargin, setTargetMargin] = useState<string>('15');
+
+  useEffect(() => {
+    const load = async () => {
+      const url = new URL('/api/pricing/recommendations', window.location.origin);
+      if (targetMargin) url.searchParams.set('targetMarginPercent', targetMargin);
+      const res = await fetch(url.toString());
+      if (res.ok) {
+        const data = await res.json();
+        const map: Record<string, { recommendedPrice: number; delta: number; target: number }> = {};
+        for (const r of data) {
+          if (r.wbArticle) {
+            map[String(r.wbArticle)] = { recommendedPrice: Number(r.recommendedPrice), delta: Number(r.priceDelta), target: Number(r.targetMarginPercent) };
+          }
+        }
+        setRecs(map);
+      }
+    };
+    load();
+  }, [targetMargin]);
   return (
     <section className="panel">
       <div className="panel__title">
@@ -34,13 +55,16 @@ export default function WbCatalog() {
               <th className="numeric">Цена со скидкой</th>
               <th className="numeric">Скидка</th>
               <th className="numeric">Остаток</th>
+              <th className="numeric">Цель маржи, %</th>
+              <th className="numeric">Реком. цена</th>
+              <th className="numeric">Δ к текущей</th>
             </tr>
           </thead>
           <tbody>
             {ctx.loadingWb ? (
-              <tr><td colSpan={8}>Загрузка…</td></tr>
+              <tr><td colSpan={11}>Загрузка…</td></tr>
             ) : ctx.wbProducts.length === 0 ? (
-              <tr><td colSpan={8}>Нет данных. Попробуйте импортировать или синхронизировать товары.</td></tr>
+              <tr><td colSpan={11}>Нет данных. Попробуйте импортировать или синхронизировать товары.</td></tr>
             ) : (
               ctx.pagedProducts.map(product => (
                 <tr key={`${product.nmId ?? product.id ?? product.vendorCode}`}>
@@ -52,6 +76,9 @@ export default function WbCatalog() {
                   <td className="numeric">{ctx.currency(product.priceWithDiscount ?? product.salePrice)}</td>
                   <td className="numeric">{product.discount != null ? `${product.discount}%` : '—'}</td>
                   <td className="numeric">{ctx.numberFormat(product.totalQuantity)}</td>
+                  <td className="numeric"><input style={{ width: 60 }} value={targetMargin} onChange={e => setTargetMargin(e.target.value)} /></td>
+                  <td className="numeric">{(() => { const r = recs[String(product.nmId ?? product.vendorCode ?? '')]; return r ? ctx.currency(r.recommendedPrice) : '—'; })()}</td>
+                  <td className="numeric">{(() => { const r = recs[String(product.nmId ?? product.vendorCode ?? '')]; return r ? ctx.currency(r.delta) : '—'; })()}</td>
                 </tr>
               ))
             )}

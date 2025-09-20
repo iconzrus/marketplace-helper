@@ -4,6 +4,7 @@ import type { AppOutletContext } from '../App';
 
 export default function Analytics() {
   const ctx = useOutletContext<AppOutletContext>();
+  // Placeholder: trend charts could use /api/snapshots?from=...&to=...
   return (
     <section className="panel">
       <div className="panel__title analytics-header">
