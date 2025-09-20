@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../App';
 
@@ -9,19 +10,16 @@ export default function WbCatalog() {
 
   useEffect(() => {
     const load = async () => {
-      const url = new URL('/api/pricing/recommendations', window.location.origin);
-      if (targetMargin) url.searchParams.set('targetMarginPercent', targetMargin);
-      const res = await fetch(url.toString());
-      if (res.ok) {
-        const data = await res.json();
-        const map: Record<string, { recommendedPrice: number; delta: number; target: number }> = {};
-        for (const r of data) {
-          if (r.wbArticle) {
-            map[String(r.wbArticle)] = { recommendedPrice: Number(r.recommendedPrice), delta: Number(r.priceDelta), target: Number(r.targetMarginPercent) };
-          }
+      const params: Record<string, string> = {};
+      if (targetMargin) params.targetMarginPercent = targetMargin;
+      const { data } = await axios.get('/api/pricing/recommendations', { params });
+      const map: Record<string, { recommendedPrice: number; delta: number; target: number }> = {};
+      for (const r of data as any[]) {
+        if (r.wbArticle) {
+          map[String(r.wbArticle)] = { recommendedPrice: Number(r.recommendedPrice), delta: Number(r.priceDelta), target: Number(r.targetMarginPercent) };
         }
-        setRecs(map);
       }
+      setRecs(map);
     };
     load();
   }, [targetMargin]);

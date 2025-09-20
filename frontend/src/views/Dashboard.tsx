@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 type Alert = {
   type: 'LOW_MARGIN' | 'NEGATIVE_MARGIN' | 'LOW_STOCK';
@@ -18,11 +19,10 @@ export default function Dashboard() {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/alerts');
-        if (res.ok) {
-          const data = await res.json();
-          setAlerts(data ?? []);
-        }
+        const { data } = await axios.get<Alert[]>('/api/alerts');
+        setAlerts(data ?? []);
+      } catch (e) {
+        setAlerts([]);
       } finally {
         setLoading(false);
       }
