@@ -39,78 +39,44 @@ public class DemoDataInitializer {
     }
 
     private void seedProducts() {
-        Product smartphone = new Product();
-        smartphone.setName("Смартфон Helios X200");
-        smartphone.setWbArticle("100001");
-        smartphone.setPrice(new BigDecimal("15990"));
-        smartphone.setPurchasePrice(new BigDecimal("11200"));
-        smartphone.setLogisticsCost(new BigDecimal("1200"));
-        smartphone.setMarketingCost(new BigDecimal("800"));
-        smartphone.setOtherExpenses(new BigDecimal("500"));
-        smartphone.setStockQuantity(60);
-        smartphone.setCategory("Электроника");
-        smartphone.setBrand("Helios");
+        Product landingNetCaseBlack = new Product();
+        landingNetCaseBlack.setName("Чехол для рыболовного подсака 80*85 см чёрный");
+        landingNetCaseBlack.setWbArticle("ch5_bl");
+        landingNetCaseBlack.setWbBarcode("4673756010669");
+        landingNetCaseBlack.setPrice(new BigDecimal("2059.55"));
+        landingNetCaseBlack.setPurchasePrice(new BigDecimal("1180.00"));
+        landingNetCaseBlack.setLogisticsCost(new BigDecimal("76.00"));
+        landingNetCaseBlack.setMarketingCost(new BigDecimal("120.00"));
+        landingNetCaseBlack.setOtherExpenses(new BigDecimal("45.00"));
+        landingNetCaseBlack.setStockQuantity(48);
+        landingNetCaseBlack.setCategory("Другие принадлежности для рыбалки");
+        landingNetCaseBlack.setBrand("FISHING BAND");
 
-        Product headphones = new Product();
-        headphones.setName("Беспроводные наушники WavePods");
-        headphones.setWbArticle("WAVE-AIR");
-        headphones.setPrice(new BigDecimal("5490"));
-        headphones.setPurchasePrice(new BigDecimal("3100"));
-        headphones.setLogisticsCost(new BigDecimal("450"));
-        headphones.setMarketingCost(new BigDecimal("350"));
-        headphones.setOtherExpenses(new BigDecimal("200"));
-        headphones.setStockQuantity(120);
-        headphones.setCategory("Электроника");
-        headphones.setBrand("Wave");
+        Product landingNetCaseKhaki = new Product();
+        landingNetCaseKhaki.setName("Чехол для подсака и подсачека непромокаемый 80*85 см хаки");
+        landingNetCaseKhaki.setWbArticle("ch1");
+        landingNetCaseKhaki.setWbBarcode("4673756010058");
+        landingNetCaseKhaki.setPrice(new BigDecimal("1885.10"));
+        landingNetCaseKhaki.setPurchasePrice(new BigDecimal("1090.00"));
+        landingNetCaseKhaki.setLogisticsCost(new BigDecimal("97.29"));
+        landingNetCaseKhaki.setMarketingCost(new BigDecimal("105.00"));
+        landingNetCaseKhaki.setOtherExpenses(new BigDecimal("40.00"));
+        landingNetCaseKhaki.setStockQuantity(36);
+        landingNetCaseKhaki.setCategory("Другие принадлежности для рыбалки");
+        landingNetCaseKhaki.setBrand("FISHING BAND");
 
-        Product backpack = new Product();
-        backpack.setName("Рюкзак Explorer 35L");
-        backpack.setWbArticle("100003");
-        backpack.setPrice(new BigDecimal("3990"));
-        backpack.setPurchasePrice(new BigDecimal("2100"));
-        backpack.setLogisticsCost(new BigDecimal("380"));
-        backpack.setMarketingCost(new BigDecimal("250"));
-        backpack.setOtherExpenses(new BigDecimal("180"));
-        backpack.setStockQuantity(30);
-        backpack.setCategory("Спорт");
-        backpack.setBrand("NordHike");
+        Product carpRig = new Product();
+        carpRig.setName("Оснастка карповая Fishing Band флэт-метод 80 гр, №6");
+        carpRig.setWbArticle("0409");
+        carpRig.setPrice(new BigDecimal("679.95"));
+        carpRig.setPurchasePrice(new BigDecimal("340.00"));
+        carpRig.setLogisticsCost(new BigDecimal("60.80"));
+        carpRig.setMarketingCost(new BigDecimal("85.00"));
+        carpRig.setOtherExpenses(new BigDecimal("30.00"));
+        carpRig.setStockQuantity(72);
+        carpRig.setCategory("Кормушки рыболовные");
+        carpRig.setBrand("FISHING BAND");
 
-        Product smartwatch = new Product();
-        smartwatch.setName("Умные часы PulseGo");
-        smartwatch.setWbArticle("100004");
-        smartwatch.setPrice(new BigDecimal("12990"));
-        smartwatch.setPurchasePrice(new BigDecimal("8400"));
-        smartwatch.setLogisticsCost(new BigDecimal("950"));
-        smartwatch.setMarketingCost(new BigDecimal("620"));
-        smartwatch.setOtherExpenses(new BigDecimal("350"));
-        smartwatch.setStockQuantity(80);
-        smartwatch.setCategory("Электроника");
-        smartwatch.setBrand("Pulse");
-
-        Product blender = new Product();
-        blender.setName("Погружной блендер KitchenPro 900");
-        blender.setWbArticle("KP-900");
-        blender.setPrice(new BigDecimal("4990"));
-        blender.setPurchasePrice(new BigDecimal("2900"));
-        blender.setLogisticsCost(new BigDecimal("420"));
-        blender.setMarketingCost(new BigDecimal("280"));
-        blender.setOtherExpenses(new BigDecimal("190"));
-        blender.setStockQuantity(55);
-        blender.setCategory("Бытовая техника");
-        blender.setBrand("KitchenPro");
-
-        Product sneakers = new Product();
-        sneakers.setName("Кроссовки Sprint Pro");
-        sneakers.setWbArticle("100007");
-        sneakers.setPrice(new BigDecimal("6290"));
-        sneakers.setPurchasePrice(new BigDecimal("3600"));
-        sneakers.setLogisticsCost(new BigDecimal("410"));
-        sneakers.setMarketingCost(new BigDecimal("320"));
-        sneakers.setOtherExpenses(new BigDecimal("260"));
-        sneakers.setStockQuantity(90);
-        sneakers.setCategory("Спорт");
-        sneakers.setBrand("FastRun");
-
-        productRepository.saveAll(List.of(smartphone, headphones, backpack, smartwatch, blender, sneakers));
+        productRepository.saveAll(List.of(landingNetCaseBlack, landingNetCaseKhaki, carpRig));
     }
 }
