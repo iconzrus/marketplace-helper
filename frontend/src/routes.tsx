@@ -1,5 +1,5 @@
 import React from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createHashRouter } from 'react-router-dom';
 import App from './App';
 
 const Dashboard = React.lazy(() => import('./views/Dashboard'));
@@ -9,9 +9,7 @@ const Corrections = React.lazy(() => import('./views/Corrections'));
 const ImportView = React.lazy(() => import('./views/ImportView'));
 const DemoCenter = React.lazy(() => import('./views/DemoCenter'));
 
-const basename = '/marketplace-helper';
-
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: '/',
     element: <App />,
@@ -24,6 +22,6 @@ export const router = createBrowserRouter([
       { path: 'demo', element: <DemoCenter /> }
     ]
   }
-], { basename });
+]);
 
 
