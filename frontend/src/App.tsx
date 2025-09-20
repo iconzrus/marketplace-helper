@@ -4,6 +4,10 @@ import { computeMargin } from './utils';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from './config';
 
+if (API_BASE_URL && axios.defaults.baseURL !== API_BASE_URL) {
+  axios.defaults.baseURL = API_BASE_URL;
+}
+
 interface ProductAnalytics {
   productId?: number;
   wbProductId?: number;
