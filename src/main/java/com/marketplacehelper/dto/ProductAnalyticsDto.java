@@ -14,7 +14,6 @@ public class ProductAnalyticsDto {
     private Long wbProductId;
     private String name;
     private String wbArticle;
-    private String supplierArticle;
     private String vendorCode;
     private String brand;
     private String category;
@@ -66,14 +65,6 @@ public class ProductAnalyticsDto {
 
     public void setWbArticle(String wbArticle) {
         this.wbArticle = wbArticle;
-    }
-
-    public String getSupplierArticle() {
-        return supplierArticle;
-    }
-
-    public void setSupplierArticle(String supplierArticle) {
-        this.supplierArticle = supplierArticle;
     }
 
     public String getVendorCode() {
