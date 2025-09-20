@@ -138,6 +138,8 @@ const App = () => {
   const [validationItems, setValidationItems] = useState<ProductValidationItem[] | null>(null);
   const [loadingValidation, setLoadingValidation] = useState(false);
   const [demoActionLoading, setDemoActionLoading] = useState(false);
+  const [genCount, setGenCount] = useState<string>('10');
+  const [genType, setGenType] = useState<'both' | 'excel' | 'wb'>('both');
 
   const fetchWbStatuses = async () => {
     setWbStatusLoading(true);
@@ -465,6 +467,27 @@ const App = () => {
     }
   };
 
+  const runDemoGenerate = async () => {
+    if (!authToken) return;
+    setDemoActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const n = Math.max(0, Number(genCount || '0'));
+      await axios.post(`/api/demo/generate?count=${n}&type=${genType}`);
+      await fetchWbProducts();
+      await fetchAnalytics();
+      await fetchValidation();
+      setMessage(`Сгенерировано ${n} объектов (${genType}).`);
+    } catch (err) {
+      console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) return;
+      setError('Не удалось сгенерировать данные.');
+    } finally {
+      setDemoActionLoading(false);
+    }
+  };
+
   const openWhatIf = (item: ProductAnalytics) => {
     setWhatIfOpen({ open: true, item });
   };
@@ -781,6 +804,23 @@ const App = () => {
               <button className="btn btn--secondary" onClick={() => applyPreset('edge')}>Пресет: Сложные кейсы</button>
               <button className="btn" onClick={runDemoAutofill} disabled={demoActionLoading}>
                 {demoActionLoading ? 'Заполнение…' : 'Автозаполнить недостающие расходы'}
+              </button>
+            </div>
+            <div className="gen-controls">
+              <input
+                inputMode="numeric"
+                placeholder="Сколько сгенерировать"
+                value={genCount}
+                onChange={e => setGenCount(e.target.value)}
+                style={{ width: 180 }}
+              />
+              <select value={genType} onChange={e => setGenType(e.target.value as any)}>
+                <option value="both">WB + Excel (поровну)</option>
+                <option value="excel">Только Excel</option>
+                <option value="wb">Только WB</option>
+              </select>
+              <button className="btn" onClick={runDemoGenerate} disabled={demoActionLoading}>
+                {demoActionLoading ? 'Генерация…' : 'Сгенерировать'}
               </button>
             </div>
           </div>

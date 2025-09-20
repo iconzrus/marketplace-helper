@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class DemoDataService {
@@ -242,6 +243,71 @@ public class DemoDataService {
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    @Transactional
+    public int generateDemo(int count, String type) {
+        int total = Math.max(0, count);
+        String t = type == null ? "both" : type.trim().toLowerCase();
+        int created = 0;
+        int excelCount = total;
+        int wbCount = total;
+        if ("excel".equals(t)) {
+            wbCount = 0;
+        } else if ("wb".equals(t)) {
+            excelCount = 0;
+        }
+        if ("both".equals(t)) {
+            excelCount = total / 2 + (total % 2);
+            wbCount = total / 2;
+        }
+
+        for (int i = 0; i < excelCount; i++) {
+            Product p = new Product();
+            p.setName(randomName());
+            p.setBrand(randomBrand());
+            p.setCategory(randomCategory());
+            p.setPrice(randomPrice());
+            // оставляем пустые расходы, чтобы показать работу автозаполнения/пересчёта
+            productRepository.save(p);
+            created++;
+        }
+
+        for (int i = 0; i < wbCount; i++) {
+            WbProduct wb = new WbProduct();
+            wb.setNmId(randomNmId());
+            wb.setVendorCode("VN-" + wb.getNmId());
+            wb.setName(randomName());
+            wb.setBrand(randomBrand());
+            wb.setCategory(randomCategory());
+            fillWbRandom(wb);
+            wbProductRepository.save(wb);
+            created++;
+        }
+
+        return created;
+    }
+
+    private final Random rnd = new Random();
+
+    private String randomName() {
+        String[] nouns = {"Чехол", "Рюкзак", "Коврик", "Перчатки", "Бутылка", "Лампа", "Подставка", "Мяч"};
+        String[] adj = {"спортивный", "походный", "универсальный", "компактный", "профессиональный"};
+        return nouns[rnd.nextInt(nouns.length)] + " " + adj[rnd.nextInt(adj.length)] + " #" + (100 + rnd.nextInt(900));
+    }
+
+    private String randomBrand() {
+        String[] brands = {"FISHING BAND", "OutdoorPro", "UrbanGear", "LiteMax", "ProFit"};
+        return brands[rnd.nextInt(brands.length)];
+    }
+
+    private String randomCategory() {
+        String[] cats = {"Аксессуары", "Спорт", "Туризм", "Дом", "Электроника"};
+        return cats[rnd.nextInt(cats.length)];
+    }
+
+    private Long randomNmId() {
+        return 100000000L + Math.abs(rnd.nextLong() % 900000000L);
     }
 }
 

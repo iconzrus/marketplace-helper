@@ -73,6 +73,15 @@ class DemoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.affected").value(42));
     }
+
+    @Test
+    void generateEndpointReturnsCreated() throws Exception {
+        when(demoDataService.generateDemo(10, "both")).thenReturn(10);
+        mockMvc.perform(post("/api/demo/generate?count=10&type=both")
+                        .header("Authorization", "Bearer test"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(10));
+    }
 }
 
 

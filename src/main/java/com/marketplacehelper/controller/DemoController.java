@@ -28,4 +28,11 @@ public class DemoController {
         int affected = demoDataService.fillRandomAll();
         return ResponseEntity.ok(java.util.Map.of("affected", affected));
     }
+
+    @PostMapping("/generate")
+    public ResponseEntity<?> generate(@RequestParam(name = "count") int count,
+                                      @RequestParam(name = "type", defaultValue = "both") String type) {
+        int created = demoDataService.generateDemo(count, type);
+        return ResponseEntity.ok(java.util.Map.of("created", created));
+    }
 }

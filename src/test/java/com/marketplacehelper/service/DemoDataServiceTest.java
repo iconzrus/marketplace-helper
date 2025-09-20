@@ -71,6 +71,18 @@ class DemoDataServiceTest {
         assertThat(updated.getMarketingCost()).isNotNull();
         assertThat(updated.getOtherExpenses()).isNotNull();
     }
+
+    @Test
+    void generateCreatesRequestedCounts() {
+        int createdBoth = demoDataService.generateDemo(7, "both");
+        assertThat(createdBoth).isEqualTo(7);
+
+        int createdExcel = demoDataService.generateDemo(5, "excel");
+        assertThat(createdExcel).isEqualTo(5);
+
+        int createdWb = demoDataService.generateDemo(4, "wb");
+        assertThat(createdWb).isEqualTo(4);
+    }
 }
 
 
