@@ -23,6 +23,7 @@ export default function Corrections() {
                 <th>Артикул</th>
                 <th>Проблемы</th>
                 <th>Рекомендации</th>
+                <th>Что если…</th>
               </tr>
             </thead>
             <tbody>
@@ -43,6 +44,15 @@ export default function Corrections() {
                   <td>
                     {item.issues.some(i => i.suggestion) ? (
                       <ul className="hints">{item.issues.filter(i => i.suggestion).map((i, idx) => (<li key={idx}>{i.suggestion}</li>))}</ul>
+                    ) : '—'}
+                  </td>
+                  <td>
+                    {ctx.__openWhatIf ? (
+                      <button className="btn btn--secondary" onClick={() => ctx.__openWhatIf!({
+                        productId: item.productId,
+                        name: item.name,
+                        wbArticle: item.wbArticle
+                      } as any)}>Что если…</button>
                     ) : '—'}
                   </td>
                 </tr>

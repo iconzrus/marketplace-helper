@@ -159,6 +159,8 @@ export type AppOutletContext = {
   percent: (v?: number) => string;
   numberFormat: (v?: number) => string;
   sourceBadge: (v?: ProductAnalytics['dataSource']) => string;
+  // actions
+  __openWhatIf?: (item: ProductAnalytics) => void;
 };
 
 const App = () => {
@@ -787,7 +789,8 @@ const App = () => {
           // Demo
           demoMode, setDemoMode, runDemoAutofill, genCount, setGenCount, genType, setGenType, delCount, setDelCount, delAll, setDelAll, runDemoGenerate, runDemoDelete,
           // helpers
-          currency, percent, numberFormat, sourceBadge
+          currency, percent, numberFormat, sourceBadge,
+          __openWhatIf: openWhatIf
         } as AppOutletContext} />
       </div>
 
