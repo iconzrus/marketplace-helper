@@ -333,6 +333,12 @@ table {
   min-width: 720px;
 }
 
+/* Resizable columns */
+.table--resizable { table-layout: fixed; }
+.th-resizable { position: relative; }
+.th-resizable .resizer { position: absolute; top: 0; right: -3px; width: 6px; height: 100%; cursor: col-resize; user-select: none; }
+.th-resizing { cursor: col-resize; }
+
 /* Sticky first columns for better UX */
 td.col-actions, th.col-actions { position: sticky; left: 180px; background: #fff; z-index: 2; }
 td.col-comments, th.col-comments { position: sticky; right: 0; background: #fff; z-index: 2; }
@@ -392,6 +398,7 @@ tr:nth-child(even) td {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  align-items: flex-start;
 }
 
 .toolbar {
