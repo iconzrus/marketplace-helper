@@ -5,6 +5,7 @@ import Dashboard from './Dashboard';
 import axios from 'axios';
 import { MemoryRouter } from 'react-router-dom';
 import { createContext, useContext } from 'react';
+import { vi } from 'vitest';
 
 vi.mock('axios', () => {
   return {
@@ -20,8 +21,8 @@ const Ctx = createContext<any>(null);
 function useOutletContextMock() {
   return useContext(Ctx);
 }
-jest.mock('react-router-dom', () => {
-  const actual = jest.requireActual('react-router-dom');
+vi.mock('react-router-dom', async () => {
+  const actual: any = await vi.importActual('react-router-dom');
   return {
     ...actual,
     useOutletContext: () => useOutletContextMock()
