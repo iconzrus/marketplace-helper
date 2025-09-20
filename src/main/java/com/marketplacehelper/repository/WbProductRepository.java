@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface WbProductRepository extends JpaRepository<WbProduct, Long> {
     
     Optional<WbProduct> findByNmId(Long nmId);
+
+    Optional<WbProduct> findByVendorCode(String vendorCode);
     
     List<WbProduct> findByVendor(String vendor);
     

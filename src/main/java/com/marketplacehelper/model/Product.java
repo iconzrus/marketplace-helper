@@ -39,10 +39,22 @@ public class Product {
     
     @Column(name = "brand")
     private String brand;
-    
+
+    @Column(name = "purchase_price", precision = 10, scale = 2)
+    private BigDecimal purchasePrice;
+
+    @Column(name = "logistics_cost", precision = 10, scale = 2)
+    private BigDecimal logisticsCost;
+
+    @Column(name = "marketing_cost", precision = 10, scale = 2)
+    private BigDecimal marketingCost;
+
+    @Column(name = "other_expenses", precision = 10, scale = 2)
+    private BigDecimal otherExpenses;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-    
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
@@ -119,9 +131,41 @@ public class Product {
     public String getBrand() {
         return brand;
     }
-    
+
     public void setBrand(String brand) {
         this.brand = brand;
+    }
+
+    public BigDecimal getPurchasePrice() {
+        return purchasePrice;
+    }
+
+    public void setPurchasePrice(BigDecimal purchasePrice) {
+        this.purchasePrice = purchasePrice;
+    }
+
+    public BigDecimal getLogisticsCost() {
+        return logisticsCost;
+    }
+
+    public void setLogisticsCost(BigDecimal logisticsCost) {
+        this.logisticsCost = logisticsCost;
+    }
+
+    public BigDecimal getMarketingCost() {
+        return marketingCost;
+    }
+
+    public void setMarketingCost(BigDecimal marketingCost) {
+        this.marketingCost = marketingCost;
+    }
+
+    public BigDecimal getOtherExpenses() {
+        return otherExpenses;
+    }
+
+    public void setOtherExpenses(BigDecimal otherExpenses) {
+        this.otherExpenses = otherExpenses;
     }
     
     public LocalDateTime getCreatedAt() {
@@ -140,6 +184,12 @@ public class Product {
         this.updatedAt = updatedAt;
     }
     
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
