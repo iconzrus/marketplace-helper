@@ -136,6 +136,23 @@ body {
   gap: 12px;
 }
 
+/* Demo Center */
+.demo-banner { background: var(--bg-emphasis); border: 1px dashed var(--brand-500); color: var(--text-brand); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; }
+.demo-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-surface); font-size: 13px; }
+.chip input { margin: 0; }
+.presets { display: flex; gap: 8px; flex-wrap: wrap; }
+.presets button { background: var(--bg-emphasis); color: var(--text-brand); }
+.kpis { display: flex; gap: 12px; flex-wrap: wrap; color: var(--text-secondary); font-size: 13px; }
+.delta { font-weight: 600; }
+.delta--up { color: #15803d; }
+.delta--down { color: #b91c1c; }
+
+/* What-if */
+.whatif { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.whatif .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.whatif .out { background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16,185,129,0.25); padding: 10px; border-radius: 8px; }
+
 .panel__title h2 {
   margin: 0;
   font-size: 20px;

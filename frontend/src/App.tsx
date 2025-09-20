@@ -116,6 +116,9 @@ const App = () => {
   const pageSize = 10;
   const [wbStatuses, setWbStatuses] = useState<{ name: string; path: string; status: 'UP' | 'DOWN'; httpStatus?: number; message?: string }[] | null>(null);
   const [wbStatusLoading, setWbStatusLoading] = useState(false);
+  const [demoMode, setDemoMode] = useState<boolean>(false);
+  const [kpiDelta, setKpiDelta] = useState<{ movedToProfit?: number; remainedInFix?: number } | null>(null);
+  const [whatIfOpen, setWhatIfOpen] = useState<{ open: boolean; item?: ProductAnalytics }>({ open: false });
 
   const fetchWbStatuses = async () => {
     setWbStatusLoading(true);
@@ -152,12 +155,14 @@ const App = () => {
   useEffect(() => {
     const storedToken = localStorage.getItem('mh_auth_token');
     const storedUsername = localStorage.getItem('mh_auth_username');
+    const storedDemo = localStorage.getItem('mh_demo_mode');
     if (storedToken) {
       setAuthToken(storedToken);
     }
     if (storedUsername) {
       setAuthUser(storedUsername);
     }
+    if (storedDemo != null) setDemoMode(storedDemo === 'true');
   }, []);
 
   useEffect(() => {
@@ -182,6 +187,10 @@ const App = () => {
       axios.interceptors.response.eject(interceptor);
     };
   }, [handleLogout]);
+
+  useEffect(() => {
+    localStorage.setItem('mh_demo_mode', String(demoMode));
+  }, [demoMode]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -360,7 +369,18 @@ const App = () => {
       setMessage(
         `Файл «${file.name}» загружен. Создано ${data.created}, обновлено ${data.updated}, пропущено ${data.skipped}.`
       );
+      const before = analyticsReport;
       await fetchAnalytics();
+      // Простейшая метрика перемещения
+      setTimeout(() => {
+        setKpiDelta(prev => {
+          const after = analyticsReport;
+          if (!before || !after) return prev;
+          const moved = Math.max(0, after.profitableCount - before.profitableCount);
+          const remained = Math.max(0, after.requiresAttentionCount - before.requiresAttentionCount);
+          return { movedToProfit: moved, remainedInFix: remained };
+        });
+      }, 0);
     } catch (err) {
       console.error(err);
       if (axios.isAxiosError(err) && err.response?.status === 401) {
@@ -370,6 +390,38 @@ const App = () => {
     } finally {
       (event.target as HTMLInputElement).value = '';
     }
+  };
+
+  const applyPreset = async (preset: 'minimal' | 'typical' | 'edge') => {
+    // Демонстрационные пресеты: запросим у бэка заполнение мок‑данных (если появится эндпоинт),
+    // пока просто дернём синхронизацию и обновим данные.
+    try {
+      setMessage(null);
+      if (preset === 'minimal') {
+        setMinMarginPercent(10);
+      } else if (preset === 'typical') {
+        setMinMarginPercent(15);
+      } else {
+        setMinMarginPercent(20);
+      }
+      await fetchAnalytics({ minMarginPercent });
+      await fetchWbProducts();
+    } catch (_) {}
+  };
+
+  const openWhatIf = (item: ProductAnalytics) => {
+    setWhatIfOpen({ open: true, item });
+  };
+
+  const computeWhatIf = (base: ProductAnalytics, changes: Partial<ProductAnalytics>) => {
+    const price = (changes.wbDiscountPrice ?? changes.wbPrice ?? base.wbDiscountPrice ?? base.wbPrice ?? base.localPrice) ?? 0;
+    const purchase = changes.purchasePrice ?? base.purchasePrice ?? 0;
+    const logistics = changes.logisticsCost ?? base.logisticsCost ?? 0;
+    const marketing = changes.marketingCost ?? base.marketingCost ?? 0;
+    const other = changes.otherExpenses ?? base.otherExpenses ?? 0;
+    const margin = price - purchase - logistics - marketing - other;
+    const marginPercent = price > 0 ? (margin / price) * 100 : undefined;
+    return { margin, marginPercent };
   };
 
   const handleMinMarginChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -477,13 +529,16 @@ const App = () => {
         <td className="numeric">{numberFormat(item.wbStock)}</td>
         <td>
           {item.warnings && item.warnings.length > 0 ? (
-            <ul className="warnings">
-              {item.warnings.map((warning, index) => (
-                <li key={index}>{warning}</li>
-              ))}
-            </ul>
+            <>
+              <ul className="warnings">
+                {item.warnings.map((warning, index) => (
+                  <li key={index}>{warning}</li>
+                ))}
+              </ul>
+              <button className="btn btn--secondary" onClick={() => openWhatIf(item)}>Что если…</button>
+            </>
           ) : (
-            '—'
+            <button className="btn btn--secondary" onClick={() => openWhatIf(item)}>Что если…</button>
           )}
         </td>
       </tr>
@@ -592,6 +647,29 @@ const App = () => {
                 <li key={index}>{warning}</li>
               ))}
             </ul>
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <div className="panel__title">
+          <h2>Демо‑центр</h2>
+          <div className="demo-toolbar">
+            <label className="chip">
+              <input type="checkbox" checked={demoMode} onChange={e => setDemoMode(e.target.checked)} /> Demo Mode
+            </label>
+            <div className="presets">
+              <button className="btn btn--secondary" onClick={() => applyPreset('minimal')}>Пресет: Минимум</button>
+              <button className="btn btn--secondary" onClick={() => applyPreset('typical')}>Пресет: Типовой</button>
+              <button className="btn btn--secondary" onClick={() => applyPreset('edge')}>Пресет: Сложные кейсы</button>
+            </div>
+          </div>
+        </div>
+        {demoMode && <div className="demo-banner">Демо‑режим активен: можно безопасно экспериментировать с данными и порогами.</div>}
+        {kpiDelta && (kpiDelta.movedToProfit != null || kpiDelta.remainedInFix != null) && (
+          <div className="kpis">
+            {kpiDelta.movedToProfit != null && <span className="delta delta--up">↑ В маржинальность: +{kpiDelta.movedToProfit}</span>}
+            {kpiDelta.remainedInFix != null && <span className="delta delta--down">→ Оставались в корректировке: {kpiDelta.remainedInFix}</span>}
           </div>
         )}
       </section>
@@ -845,8 +923,71 @@ const App = () => {
           </>
         )}
       </section>
+
+      {whatIfOpen.open && whatIfOpen.item && (
+        <div className="modal-backdrop" onClick={() => setWhatIfOpen({ open: false })}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3 className="modal__title">Что если по: {whatIfOpen.item.name ?? whatIfOpen.item.wbArticle}</h3>
+              <button className="btn btn--secondary" onClick={() => setWhatIfOpen({ open: false })}>Закрыть</button>
+            </div>
+            <WhatIfForm base={whatIfOpen.item} onClose={() => setWhatIfOpen({ open: false })} compute={computeWhatIf} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default App;
+
+// What-if component inline for simplicity
+function WhatIfForm({ base, onClose, compute }: { base: ProductAnalytics; onClose: () => void; compute: (b: ProductAnalytics, c: Partial<ProductAnalytics>) => { margin: number; marginPercent?: number } }) {
+  const [price, setPrice] = useState<string>(String(base.wbDiscountPrice ?? base.wbPrice ?? base.localPrice ?? ''));
+  const [purchase, setPurchase] = useState<string>(String(base.purchasePrice ?? ''));
+  const [logistics, setLogistics] = useState<string>(String(base.logisticsCost ?? ''));
+  const [marketing, setMarketing] = useState<string>(String(base.marketingCost ?? ''));
+  const [other, setOther] = useState<string>(String(base.otherExpenses ?? ''));
+
+  const parsed = {
+    wbDiscountPrice: price === '' ? undefined : Number(price),
+    purchasePrice: purchase === '' ? undefined : Number(purchase),
+    logisticsCost: logistics === '' ? undefined : Number(logistics),
+    marketingCost: marketing === '' ? undefined : Number(marketing),
+    otherExpenses: other === '' ? undefined : Number(other)
+  } as Partial<ProductAnalytics>;
+
+  const res = compute(base, parsed);
+
+  return (
+    <div className="whatif">
+      <div className="field">
+        <label>Цена (со скидкой)</label>
+        <input inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} />
+      </div>
+      <div className="field">
+        <label>Закупка</label>
+        <input inputMode="decimal" value={purchase} onChange={e => setPurchase(e.target.value)} />
+      </div>
+      <div className="field">
+        <label>Логистика</label>
+        <input inputMode="decimal" value={logistics} onChange={e => setLogistics(e.target.value)} />
+      </div>
+      <div className="field">
+        <label>Маркетинг</label>
+        <input inputMode="decimal" value={marketing} onChange={e => setMarketing(e.target.value)} />
+      </div>
+      <div className="field">
+        <label>Прочие</label>
+        <input inputMode="decimal" value={other} onChange={e => setOther(e.target.value)} />
+      </div>
+      <div className="out">
+        <div>Новая маржа: {currency(res.margin)}</div>
+        <div>Маржа %: {res.marginPercent != null ? res.marginPercent.toFixed(2) + '%' : '—'}</div>
+      </div>
+      <div className="modal__footer">
+        <button className="btn btn--secondary" onClick={onClose}>Закрыть</button>
+      </div>
+    </div>
+  );
+}
