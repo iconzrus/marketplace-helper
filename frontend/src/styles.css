@@ -322,6 +322,8 @@ table.table--compact { font-size: 13px; line-height: 1.25; }
 table.table--compact th, table.table--compact td { padding: 6px 8px; white-space: nowrap; }
 /* Compact buttons inside dense tables */
 .table--compact .btn { padding: 6px 10px; font-size: 13px; }
+/* Keep actions column at reasonable size */
+.col-actions { width: 140px; }
 
 @media (max-width: 1200px) {
   .table-wrapper { padding: 8px; }
