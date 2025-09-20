@@ -97,43 +97,28 @@ public class AnalyticsService {
         if (product == null) {
             return Optional.empty();
         }
-        Optional<WbProduct> directMatch = matchByKey(product.getWbArticle(), wbByArticle, wbByVendorCode);
-        if (directMatch.isPresent()) {
-            return directMatch;
+        if (product.getWbArticle() != null && !product.getWbArticle().isBlank()) {
+            WbProduct byArticle = wbByArticle.get(product.getWbArticle().trim());
+            if (byArticle == null) {
+                byArticle = wbByVendorCode.get(product.getWbArticle().trim());
+            }
+            if (byArticle == null) {
+                byArticle = parseAsNumber(product.getWbArticle())
+                        .map(number -> wbByArticle.get(String.valueOf(number)))
+                        .orElse(null);
+            }
+            if (byArticle != null) {
+                return Optional.of(byArticle);
+            }
         }
-        Optional<WbProduct> supplierMatch = matchByKey(product.getSupplierArticle(), wbByArticle, wbByVendorCode);
-        return supplierMatch;
-    }
-
-    private Optional<WbProduct> matchByKey(String key,
-                                           Map<String, WbProduct> wbByArticle,
-                                           Map<String, WbProduct> wbByVendorCode) {
-        if (key == null || key.isBlank()) {
-            return Optional.empty();
-        }
-        String trimmed = key.trim();
-        WbProduct byArticle = wbByArticle.get(trimmed);
-        if (byArticle != null) {
-            return Optional.of(byArticle);
-        }
-        WbProduct byVendor = wbByVendorCode.get(trimmed);
-        if (byVendor != null) {
-            return Optional.of(byVendor);
-        }
-        return parseAsNumber(trimmed)
-                .map(number -> wbByArticle.get(String.valueOf(number)))
-                .flatMap(value -> Optional.ofNullable(value));
+        return Optional.empty();
     }
 
     private boolean matches(Product product, WbProduct wbProduct) {
-        String articleKey = product.getWbArticle();
-        if (articleKey == null || articleKey.trim().isEmpty()) {
-            articleKey = product.getSupplierArticle();
-        }
-        if (articleKey == null) {
+        if (product.getWbArticle() == null) {
             return false;
         }
-        String article = articleKey.trim();
+        String article = product.getWbArticle().trim();
         if (article.isEmpty()) {
             return false;
         }
@@ -165,7 +150,6 @@ public class AnalyticsService {
             dto.setProductId(product.getId());
             dto.setName(product.getName());
             dto.setWbArticle(product.getWbArticle());
-            dto.setSupplierArticle(product.getSupplierArticle());
             dto.setBrand(product.getBrand());
             dto.setCategory(product.getCategory());
             dto.setLocalPrice(product.getPrice());
