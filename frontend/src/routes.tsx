@@ -9,6 +9,8 @@ const Corrections = React.lazy(() => import('./views/Corrections'));
 const ImportView = React.lazy(() => import('./views/ImportView'));
 const DemoCenter = React.lazy(() => import('./views/DemoCenter'));
 
+const basename = '/marketplace-helper';
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -22,6 +24,6 @@ export const router = createBrowserRouter([
       { path: 'demo', element: <DemoCenter /> }
     ]
   }
-]);
+], { basename });
 
 
