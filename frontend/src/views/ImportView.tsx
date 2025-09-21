@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../App';
 
@@ -14,10 +15,12 @@ export default function ImportView() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch((axios as any)?.defaults?.baseURL ? `${(axios as any).defaults.baseURL.replace(/\/$/, '')}/api/products/import/excel?dryRun=true` : '/api/products/import/excel?dryRun=true', {
+      const base = axios?.defaults?.baseURL || '';
+      const url = base ? `${base.replace(/\/$/, '')}/api/products/import/excel?dryRun=true` : '/api/products/import/excel?dryRun=true';
+      const res = await fetch(url, {
         method: 'POST',
         body: formData,
-        headers: (window as any).axios?.defaults?.headers?.common?.Authorization ? { Authorization: (window as any).axios.defaults.headers.common.Authorization } : undefined
+        headers: axios?.defaults?.headers?.common?.Authorization ? { Authorization: axios.defaults.headers.common.Authorization as string } : undefined
       } as RequestInit);
       const data = await res.json();
       setPreview(data);
