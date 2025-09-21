@@ -190,7 +190,7 @@ export default function Analytics() {
           <div className="table-wrapper table-wrapper--compact" ref={attentionWrapperRef}>
             <h3>Требуют корректировки или сопоставления</h3>
             <div className="toolbar">
-              <button className="btn btn--secondary" onClick={() => hideSelected((ctx.analyticsReport.requiresAttention ?? []))}>Скрыть выбранные</button>
+              <button className="btn btn--secondary" onClick={() => hideSelected((ctx.analyticsReport?.requiresAttention ?? []))}>Скрыть выбранные</button>
               <button className="btn btn--secondary" onClick={resetHidden}>Показать все</button>
             </div>
             <table className="table table--compact" ref={attentionTableRef}>
@@ -200,7 +200,7 @@ export default function Analytics() {
                   <th>Артикул</th>
                   <th className="col-actions">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input type="checkbox" onChange={e => toggleSelectAll(e.target.checked, (ctx.analyticsReport.requiresAttention ?? []).filter(it => !hidden[String(it.productId ?? it.wbProductId ?? it.wbArticle ?? '')]))} />
+                      <input type="checkbox" onChange={e => toggleSelectAll(e.target.checked, (ctx.analyticsReport?.requiresAttention ?? []).filter(it => !hidden[String(it.productId ?? it.wbProductId ?? it.wbArticle ?? '')]))} />
                       Действия
                     </div>
                   </th>
