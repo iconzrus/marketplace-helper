@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../App';
 
@@ -8,6 +8,21 @@ export default function Analytics() {
   const attentionTableRef = useRef<HTMLTableElement | null>(null);
   const topScrollRef = useRef<HTMLDivElement | null>(null);
   const [topScrollWidth, setTopScrollWidth] = useState<number>(0);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [hidden, setHidden] = useState<Record<string, boolean>>({});
+
+  // Persist hidden attention items between sessions
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('mh_hidden_attention_ids');
+      if (raw) setHidden(JSON.parse(raw) as Record<string, boolean>);
+    } catch (_) {}
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem('mh_hidden_attention_ids', JSON.stringify(hidden));
+    } catch (_) {}
+  }, [hidden]);
 
   useEffect(() => {
     const table = attentionTableRef.current;
@@ -47,6 +62,52 @@ export default function Analytics() {
       if (ro && table) ro.unobserve(table);
     };
   }, [ctx.analyticsReport]);
+  
+  const appliedThreshold = useMemo(() => {
+    return ctx.minMarginPercent ?? Number(ctx.analyticsReport?.appliedMinMarginPercent ?? 0);
+  }, [ctx.minMarginPercent, ctx.analyticsReport?.appliedMinMarginPercent]);
+
+  const getStatusClass = (marginPercent?: number | null, negative?: boolean, below?: boolean) => {
+    if (marginPercent == null) return '';
+    if (negative) return 'status--bad';
+    const thr = appliedThreshold ?? 0;
+    if (marginPercent < 0) return 'status--bad';
+    if (marginPercent < thr || below) return 'status--warn';
+    return 'status--ok';
+  };
+
+  const toggleSelectAll = (checked: boolean, items: any[]) => {
+    const next: Record<string, boolean> = { ...selected };
+    for (const it of items) {
+      const id = String(it.productId ?? it.wbProductId ?? it.wbArticle ?? '');
+      if (!id) continue;
+      next[id] = checked;
+    }
+    setSelected(next);
+  };
+
+  const toggleOne = (id: string, checked: boolean) => {
+    setSelected(prev => ({ ...prev, [id]: checked }));
+  };
+
+  const hideSelected = (items: any[]) => {
+    const toHideIds = items
+      .map(it => String(it.productId ?? it.wbProductId ?? it.wbArticle ?? ''))
+      .filter(id => id && selected[id]);
+    if (!toHideIds.length) return;
+    setHidden(prev => {
+      const next = { ...prev } as Record<string, boolean>;
+      for (const id of toHideIds) next[id] = true;
+      return next;
+    });
+    setSelected(prev => {
+      const next = { ...prev } as Record<string, boolean>;
+      for (const id of toHideIds) delete next[id];
+      return next;
+    });
+  };
+
+  const resetHidden = () => setHidden({});
   // Placeholder: trend charts could use /api/snapshots?from=...&to=...
   return (
     <section className="panel">
@@ -111,7 +172,9 @@ export default function Analytics() {
                     <td className="numeric">{ctx.currency(item.marketingCost)}</td>
                     <td className="numeric">{ctx.currency(item.otherExpenses)}</td>
                     <td className={`numeric ${item.margin != null && item.margin < 0 ? 'negative' : ''}`}>{ctx.currency(item.margin)}</td>
-                    <td className={`numeric ${item.marginPercent != null && (item.marginPercent < 0 || item.marginBelowThreshold) ? 'warning' : ''}`}>{ctx.percent(item.marginPercent)}</td>
+                    <td className={`numeric ${item.marginPercent != null && (item.marginPercent < 0 || item.marginBelowThreshold) ? 'warning' : ''}`}>
+                      <span className={`status-dot ${getStatusClass(item.marginPercent, item.negativeMargin, item.marginBelowThreshold)}`} /> {ctx.percent(item.marginPercent)}
+                    </td>
                     <td className="numeric">{ctx.numberFormat(item.localStock)}</td>
                     <td className="numeric">{ctx.numberFormat(item.wbStock)}</td>
                   </tr>
@@ -126,12 +189,21 @@ export default function Analytics() {
           </div>
           <div className="table-wrapper table-wrapper--compact" ref={attentionWrapperRef}>
             <h3>Требуют корректировки или сопоставления</h3>
+            <div className="toolbar">
+              <button className="btn btn--secondary" onClick={() => hideSelected((ctx.analyticsReport.requiresAttention ?? []))}>Скрыть выбранные</button>
+              <button className="btn btn--secondary" onClick={resetHidden}>Показать все</button>
+            </div>
             <table className="table table--compact" ref={attentionTableRef}>
               <thead>
                 <tr>
                   <th>Товар</th>
                   <th>Артикул</th>
-                  <th className="col-actions">Действия</th>
+                  <th className="col-actions">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input type="checkbox" onChange={e => toggleSelectAll(e.target.checked, (ctx.analyticsReport.requiresAttention ?? []).filter(it => !hidden[String(it.productId ?? it.wbProductId ?? it.wbArticle ?? '')]))} />
+                      Действия
+                    </div>
+                  </th>
                   <th className="numeric">Цена</th>
                   <th className="numeric">Закупка</th>
                   <th className="numeric">Логистика</th>
@@ -145,8 +217,12 @@ export default function Analytics() {
                 </tr>
               </thead>
               <tbody>
-                {(ctx.analyticsReport.requiresAttention ?? []).map(item => (
-                  <tr key={`attention-${item.productId ?? item.wbProductId ?? item.wbArticle}`}>
+                {(ctx.analyticsReport.requiresAttention ?? [])
+                  .filter(item => !hidden[String(item.productId ?? item.wbProductId ?? item.wbArticle ?? '')])
+                  .map(item => {
+                    const id = String(item.productId ?? item.wbProductId ?? item.wbArticle ?? '');
+                    return (
+                  <tr key={`attention-${id}`}>
                     <td>
                       <div className="cell-with-meta">
                         <div>{item.name ?? '—'}</div>
@@ -155,9 +231,12 @@ export default function Analytics() {
                     </td>
                     <td>{item.wbArticle ?? item.vendorCode ?? '—'}</td>
                     <td className="col-actions">
-                      {ctx.__openWhatIf && (
-                        <button className="btn btn--secondary" onClick={() => ctx.__openWhatIf!(item)}>Что если…</button>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="checkbox" checked={!!selected[id]} onChange={e => toggleOne(id, e.target.checked)} />
+                        {ctx.__openWhatIf && (
+                          <button className="btn btn--secondary" onClick={() => ctx.__openWhatIf!(item)}>Что если…</button>
+                        )}
+                      </div>
                     </td>
                     <td className="numeric">{ctx.currency(item.wbDiscountPrice ?? item.wbPrice ?? item.localPrice)}</td>
                     <td className="numeric">{ctx.currency(item.purchasePrice)}</td>
@@ -165,7 +244,9 @@ export default function Analytics() {
                     <td className="numeric">{ctx.currency(item.marketingCost)}</td>
                     <td className="numeric">{ctx.currency(item.otherExpenses)}</td>
                     <td className={`numeric ${item.negativeMargin ? 'negative' : ''}`}>{ctx.currency(item.margin)}</td>
-                    <td className={`numeric ${item.marginBelowThreshold ? 'warning' : ''}`}>{ctx.percent(item.marginPercent)}</td>
+                    <td className={`numeric ${item.marginBelowThreshold ? 'warning' : ''}`}>
+                      <span className={`status-dot ${getStatusClass(item.marginPercent, item.negativeMargin, item.marginBelowThreshold)}`} /> {ctx.percent(item.marginPercent)}
+                    </td>
                     <td className="numeric">{ctx.numberFormat(item.localStock)}</td>
                     <td className="numeric">{ctx.numberFormat(item.wbStock)}</td>
                     <td className="col-comments">
@@ -174,7 +255,7 @@ export default function Analytics() {
                       ) : '—'}
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>

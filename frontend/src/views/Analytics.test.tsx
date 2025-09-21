@@ -72,6 +72,33 @@ describe('Analytics table UX (render)', () => {
     render(<Wrapper report={sample} extra={{ __openWhatIf: () => {} }} />);
     expect(screen.getByText('Что если…')).toBeInTheDocument();
   });
+
+  it('renders status dots for margin percent and allows hide selected', () => {
+    const sample = {
+      totalProducts: 2,
+      profitableCount: 1,
+      requiresAttentionCount: 1,
+      profitable: [{ name: 'A', wbArticle: '1', wbPrice: 10, marginPercent: 20 }],
+      requiresAttention: [{ name: 'B', wbArticle: '2', wbPrice: 12, marginPercent: 5 }]
+    } as any;
+
+    render(<Wrapper report={sample} extra={{ __openWhatIf: () => {} }} />);
+
+    // status dot appears in attention table
+    const dots = document.querySelectorAll('.status-dot');
+    expect(dots.length).toBeGreaterThan(0);
+
+    // select all and hide
+    const selectAll = screen.getByRole('checkbox');
+    fireEvent.click(selectAll);
+    fireEvent.click(screen.getByText('Скрыть выбранные'));
+    // row should disappear
+    expect(screen.queryByText('B')).not.toBeInTheDocument();
+
+    // show all restores
+    fireEvent.click(screen.getByText('Показать все'));
+    expect(screen.getByText('B')).toBeInTheDocument();
+  });
 });
 
 

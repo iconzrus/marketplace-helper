@@ -387,6 +387,12 @@ tr:nth-child(even) td {
   font-weight: 600;
 }
 
+/* Traffic-light status dot */
+.status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.status--ok { background: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,0.15); }
+.status--warn { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.15); }
+.status--bad { background: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,0.15); }
+
 .badge {
   display: inline-flex;
   align-items: center;
