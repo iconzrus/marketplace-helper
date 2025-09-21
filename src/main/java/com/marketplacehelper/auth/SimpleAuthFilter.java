@@ -26,7 +26,7 @@ public class SimpleAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
+    protected boolean shouldNotFilter(@org.springframework.lang.NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
         if (!path.startsWith("/api")) {
             return true;
@@ -41,15 +41,20 @@ public class SimpleAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@org.springframework.lang.NonNull HttpServletRequest request, @org.springframework.lang.NonNull HttpServletResponse response, @org.springframework.lang.NonNull FilterChain filterChain)
             throws ServletException, IOException {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String token = null;
         if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring(7);
-            if (authService.isTokenValid(token)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
+            token = authorization.substring(7);
+        }
+        if (token == null || token.isBlank()) {
+            // Allow token to be passed as query param for SSE/EventSource
+            token = request.getParameter("token");
+        }
+        if (token != null && authService.isTokenValid(token)) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());

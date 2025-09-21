@@ -26,6 +26,15 @@ public class ProductImportService {
 
     @Transactional
     public ProductImportResultDto importFromExcel(MultipartFile file) {
+        return importFromExcel(file, false);
+    }
+
+    /**
+     * Parses Excel and either persists results or returns a dry-run summary.
+     * When dryRun=true, no entities are saved/updated in the repository.
+     */
+    @Transactional(readOnly = true)
+    public ProductImportResultDto importFromExcel(MultipartFile file, boolean dryRun) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Файл Excel не загружен");
         }
@@ -83,10 +92,13 @@ public class ProductImportService {
                     continue;
                 }
 
-                Product product = Optional.ofNullable(wbArticle)
+                // Determine if existing product exists (for counting created/updated)
+                Product existing = Optional.ofNullable(wbArticle)
                         .filter(value -> !value.isBlank())
                         .flatMap(productRepository::findByWbArticle)
-                        .orElseGet(Product::new);
+                        .orElse(null);
+
+                Product product = existing != null ? cloneProduct(existing) : new Product();
 
                 if (product.getId() == null) {
                     product.setCreatedAt(java.time.LocalDateTime.now());
@@ -108,7 +120,7 @@ public class ProductImportService {
                     product.setName("Товар " + wbArticle);
                 }
 
-                boolean isNew = product.getId() == null;
+                boolean isNew = existing == null;
 
                 BigDecimal plannedPrice = getDecimal(row, headerMap, formatter,
                         "price", "продажнаяцена", "цена", "ценарозничная", "розничнаяцена");
@@ -163,7 +175,9 @@ public class ProductImportService {
                 product.setOtherExpenses(other);
 
                 product.setUpdatedAt(java.time.LocalDateTime.now());
-                productRepository.save(product);
+                if (!dryRun) {
+                    productRepository.save(product);
+                }
                 if (isNew) {
                     created++;
                 } else {
@@ -185,6 +199,25 @@ public class ProductImportService {
         } catch (IOException e) {
             throw new IllegalStateException("Ошибка чтения Excel файла: " + e.getMessage(), e);
         }
+    }
+
+    private Product cloneProduct(Product source) {
+        Product clone = new Product();
+        clone.setId(source.getId());
+        clone.setCreatedAt(source.getCreatedAt());
+        clone.setUpdatedAt(source.getUpdatedAt());
+        clone.setName(source.getName());
+        clone.setWbArticle(source.getWbArticle());
+        clone.setWbBarcode(source.getWbBarcode());
+        clone.setCategory(source.getCategory());
+        clone.setBrand(source.getBrand());
+        clone.setStockQuantity(source.getStockQuantity());
+        clone.setPrice(source.getPrice());
+        clone.setPurchasePrice(source.getPurchasePrice());
+        clone.setLogisticsCost(source.getLogisticsCost());
+        clone.setMarketingCost(source.getMarketingCost());
+        clone.setOtherExpenses(source.getOtherExpenses());
+        return clone;
     }
 
     private Map<String, Integer> buildHeaderMap(Row headerRow) {

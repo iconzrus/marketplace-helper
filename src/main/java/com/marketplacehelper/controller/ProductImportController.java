@@ -21,9 +21,13 @@ public class ProductImportController {
     }
 
     @PostMapping("/excel")
-    public ResponseEntity<?> importExcel(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> importExcel(@RequestParam("file") MultipartFile file,
+                                         @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun) {
         try {
-            ProductImportResultDto result = productImportService.importFromExcel(file);
+            ProductImportResultDto result = productImportService.importFromExcel(file, dryRun);
+            if (dryRun) {
+                return ResponseEntity.ok(result);
+            }
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));

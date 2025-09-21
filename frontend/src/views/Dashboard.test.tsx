@@ -7,6 +7,17 @@ import { MemoryRouter } from 'react-router-dom';
 import { createContext, useContext } from 'react';
 import { vi } from 'vitest';
 
+// Mock EventSource for SSE tests
+class MockEventSource {
+  url: string;
+  onmessage: ((this: EventSource, ev: MessageEvent) => any) | null = null;
+  onerror: ((this: EventSource, ev: Event) => any) | null = null;
+  constructor(url: string) { this.url = url; (globalThis as any).__lastES = this; }
+  close() {}
+}
+// @ts-ignore
+(globalThis as any).EventSource = MockEventSource as any;
+
 vi.mock('axios', () => {
   return {
     default: {

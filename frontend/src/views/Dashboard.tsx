@@ -29,6 +29,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
+    let es: EventSource | null = null;
     if (!token) {
       // Без токена не показываем загрузку и сразу очищаем алерты
       setAlerts([]);
@@ -66,8 +67,27 @@ export default function Dashboard() {
       }
       if (!cancelled) setLoading(false);
     };
-    loadWithRetry();
-    return () => { cancelled = true; };
+    // Try SSE first
+    try {
+      const base = (axios as any)?.defaults?.baseURL || API_BASE_URL || '';
+      const sseUrl = (base ? `${base.replace(/\/$/, '')}` : '') + `/api/alerts/stream?token=${encodeURIComponent(token)}`;
+      es = new EventSource(sseUrl);
+      es.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (Array.isArray(data)) setAlerts(data);
+        } catch (_) {}
+      };
+      es.onerror = () => {
+        es?.close();
+        loadWithRetry();
+      };
+      setLoading(false);
+    } catch (_) {
+      loadWithRetry();
+    }
+
+    return () => { cancelled = true; es?.close?.(); };
   }, [token]);
 
   // Also subscribe to global alerts from context to keep dashboard in sync after login or demo actions

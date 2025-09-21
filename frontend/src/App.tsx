@@ -209,6 +209,7 @@ const App = () => {
   const [delCount, setDelCount] = useState<string>('5');
   const [delAll, setDelAll] = useState<boolean>(false);
   const [alerts, setAlerts] = useState<{ type: 'LOW_MARGIN' | 'NEGATIVE_MARGIN' | 'LOW_STOCK'; wbArticle?: string; name?: string; margin?: number; marginPercent?: number; localStock?: number; wbStock?: number; }[]>([]);
+  const [theme, setTheme] = useState<string>(() => localStorage.getItem('mh_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
   const location = useLocation();
   const isRoot = location.pathname === '/';
@@ -265,6 +266,11 @@ const App = () => {
       delete axios.defaults.headers.common.Authorization;
     }
   }, [authToken]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('mh_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
@@ -773,6 +779,10 @@ const App = () => {
           <p>Рабочее место менеджера по маркетплейсам.</p>
         </div>
         <div className="auth-status">
+          <label className="toggle">
+            <input type="checkbox" checked={theme === 'dark'} onChange={e => setTheme(e.target.checked ? 'dark' : 'light')} />
+            Тёмная тема
+          </label>
           <span>
             Вошли как <span className="auth-status__user">{authUser ?? 'пользователь'}</span>
           </span>
