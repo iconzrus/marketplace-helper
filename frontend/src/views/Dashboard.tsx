@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../App';
+import { Area, AreaChart, Tooltip, ResponsiveContainer, defs, linearGradient, stop } from 'recharts';
 
 type Alert = {
   type: 'LOW_MARGIN' | 'NEGATIVE_MARGIN' | 'LOW_STOCK';
@@ -24,6 +25,7 @@ export default function Dashboard() {
   })();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
+  const [snap, setSnap] = useState<{ date: string; lowMargin: number; negative: number; lowStock: number }[]>([]);
 
   const token = ctx?.authToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('mh_auth_token') : null);
 
@@ -90,6 +92,51 @@ export default function Dashboard() {
     return () => { cancelled = true; es?.close?.(); };
   }, [token]);
 
+  // Load snapshots to render KPI trends
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const currentToken = (ctx as any)?.authToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('mh_auth_token') : null);
+      if (!currentToken) return;
+      try {
+        const base = (axios as any)?.defaults?.baseURL || API_BASE_URL || '';
+        const to = new Date();
+        const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 29);
+        const url = (base ? `${base.replace(/\/$/, '')}` : '') + `/api/snapshots?from=${from.toISOString().slice(0,10)}&to=${to.toISOString().slice(0,10)}`;
+        const { data } = await axios.get<any[]>(url, { headers: { Authorization: `Bearer ${currentToken}` } });
+        if (cancelled) return;
+        // naive aggregation: per day counts by thresholds similar to AlertService
+        const byDate: Record<string, { lowMargin: number; negative: number; lowStock: number }> = {};
+        for (const s of (data ?? [])) {
+          const d = s.snapshotDate ?? s.date ?? (s.snapshot_date);
+          if (!d) continue;
+          const key = String(d);
+          const entry = byDate[key] || { lowMargin: 0, negative: 0, lowStock: 0 };
+          if (s.margin && Number(s.margin) < 0) entry.negative++;
+          if (s.marginPercent != null && Number(s.marginPercent) < 10) entry.lowMargin++;
+          const st = (s.stockWb ?? s.stockLocal);
+          if (st != null && Number(st) < 10) entry.lowStock++;
+          byDate[key] = entry;
+        }
+        const series = Object.keys(byDate).sort().map(date => ({ date, ...byDate[date] }));
+        setSnap(series);
+      } catch (_) {
+        setSnap([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [ctx?.authToken]);
+
+  const kpi = useMemo(() => {
+    const last = snap[snap.length - 1];
+    return {
+      negative: last?.negative ?? 0,
+      lowMargin: last?.lowMargin ?? 0,
+      lowStock: last?.lowStock ?? 0
+    };
+  }, [snap]);
+
   // Also subscribe to global alerts from context to keep dashboard in sync after login or demo actions
   useEffect(() => {
     if (Array.isArray((ctx as any)?.alerts) && (ctx as any).alerts.length && !alerts.length) {
@@ -137,19 +184,10 @@ export default function Dashboard() {
           {loading ? 'Обновление…' : 'Обновить'}
         </button>
       </div>
-      <div className="kpi-cards">
-        <div className="card card--danger">
-          <div className="card__title">Отрицательная маржа</div>
-          <div className="card__value">{loading ? '…' : groups.NEGATIVE_MARGIN.length}</div>
-        </div>
-        <div className="card card--warning">
-          <div className="card__title">Низкая маржа</div>
-          <div className="card__value">{loading ? '…' : groups.LOW_MARGIN.length}</div>
-        </div>
-        <div className="card">
-          <div className="card__title">Низкие остатки</div>
-          <div className="card__value">{loading ? '…' : groups.LOW_STOCK.length}</div>
-        </div>
+      <div className="kpi-cards" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <KpiTile title="Отрицательная маржа" value={loading ? '…' : String(groups.NEGATIVE_MARGIN.length)} trend={snap.map(s => s.negative)} color="#dc2626" />
+        <KpiTile title="Низкая маржа" value={loading ? '…' : String(groups.LOW_MARGIN.length)} trend={snap.map(s => s.lowMargin)} color="#f59e0b" />
+        <KpiTile title="Низкие остатки" value={loading ? '…' : String(groups.LOW_STOCK.length)} trend={snap.map(s => s.lowStock)} />
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 }}>
@@ -191,6 +229,32 @@ export default function Dashboard() {
         </div>
       )}
     </section>
+  );
+}
+
+
+function KpiTile({ title, value, trend, color }: { title: string; value: string; trend: number[]; color?: string }) {
+  const stroke = color ?? '#6366f1';
+  const data = trend.map((y, i) => ({ i, y }));
+  return (
+    <div className="card" style={{ background: 'var(--bg-surface)', borderRadius: 12, padding: 12, minWidth: 240, flex: '0 0 auto' }}>
+      <div className="card__title" style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{title}</div>
+      <div className="card__value" style={{ fontSize: 28, fontWeight: 700 }}>{value}</div>
+      <div style={{ width: '100%', height: 36 }}>
+        <ResponsiveContainer>
+          <AreaChart data={data} margin={{ top: 6, bottom: 0, left: 0, right: 0 }}>
+            <defs>
+              <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Tooltip cursor={false} formatter={(v: any) => [String(v), '']} labelFormatter={() => ''} contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+            <Area type="monotone" dataKey="y" stroke={stroke} fillOpacity={1} fill="url(#grad)" strokeWidth={2} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
 

@@ -7,4 +7,13 @@ globalThis.jest = {
   mock: vi.mock,
 } as any;
 
+// Polyfill ResizeObserver for Recharts in JSDOM
+if (!(globalThis as any).ResizeObserver) {
+  (globalThis as any).ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as any;
+}
+
 
