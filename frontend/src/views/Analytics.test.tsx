@@ -40,37 +40,66 @@ function Wrapper({ report }: { report: any }) {
   );
 }
 
-describe('Analytics table UX', () => {
-  const sample = {
-    totalProducts: 1,
-    profitableCount: 1,
-    requiresAttentionCount: 0,
-    profitable: [{ name: 'A', wbArticle: '1', wbPrice: 10 }],
-    requiresAttention: []
-  };
+describe('Analytics table UX (render)', () => {
+  it('renders both tables without resizer handles', () => {
+    const sample = {
+      totalProducts: 1,
+      profitableCount: 1,
+      requiresAttentionCount: 1,
+      profitable: [{ name: 'A', wbArticle: '1', wbPrice: 10 }],
+      requiresAttention: [{ name: 'B', wbArticle: '2', wbPrice: 12 }]
+    };
 
-  it('renders resizable headers', () => {
     const { container } = render(<Wrapper report={sample} />);
+    // headers present
+    expect(screen.getAllByText('Артикул')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Остаток WB')[0]).toBeInTheDocument();
+    // ensure no legacy resizer handles in DOM
     const resizers = container.querySelectorAll('.resizer');
-    expect(resizers.length).toBeGreaterThan(0);
+    expect(resizers.length).toBe(0);
   });
 
-  it('resizes a column on drag', () => {
-    const { container } = render(<Wrapper report={sample} />);
-    // Find the header cell for "Артикул"
-    const th = screen.getAllByText('Артикул')[0].closest('th') as HTMLTableCellElement;
-    expect(th).toBeInTheDocument();
-    const resizer = th.querySelector('.resizer') as HTMLDivElement;
-    expect(resizer).toBeInTheDocument();
+  it('shows action button in attention table when handler provided', () => {
+    const sample = {
+      totalProducts: 1,
+      profitableCount: 0,
+      requiresAttentionCount: 1,
+      profitable: [],
+      requiresAttention: [{ name: 'X', wbArticle: '3', wbPrice: 15 }]
+    };
 
-    // Drag the resizer to the right
-    fireEvent.mouseDown(resizer, { clientX: 0 });
-    fireEvent.mouseMove(window, { clientX: 120 });
-    fireEvent.mouseUp(window);
+    // Provide handler via context to render the button
+    const Ctx = createContext<any>(null);
+    function useOutletContextMock() { return useContext(Ctx); }
+    vi.doMock('react-router-dom', async () => {
+      const actual: any = await vi.importActual('react-router-dom');
+      return { ...actual, useOutletContext: () => useOutletContextMock() };
+    });
 
-    // Width should be set inline (>= 80px because of clamp)
-    const width = (th.style.width || '').replace('px','');
-    expect(Number(width)).toBeGreaterThanOrEqual(80);
+    const ctxValue: any = {
+      analyticsReport: sample,
+      loadingAnalytics: false,
+      minMarginPercent: undefined,
+      setMinMarginPercent: () => {},
+      handleApplyMinMargin: () => {},
+      handleExport: () => {},
+      currency: (n?: number) => String(n ?? ''),
+      percent: (n?: number) => String(n ?? ''),
+      numberFormat: (n?: number) => String(n ?? ''),
+      sourceBadge: () => 'WB + Excel',
+      __openWhatIf: () => {}
+    };
+
+    const view = (
+      <MemoryRouter>
+        <Ctx.Provider value={ctxValue}>
+          <Analytics />
+        </Ctx.Provider>
+      </MemoryRouter>
+    );
+
+    render(view);
+    expect(screen.getByText('Что если…')).toBeInTheDocument();
   });
 });
 
