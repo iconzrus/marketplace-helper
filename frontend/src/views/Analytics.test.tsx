@@ -88,9 +88,9 @@ describe('Analytics table UX (render)', () => {
     const dots = document.querySelectorAll('.status-dot');
     expect(dots.length).toBeGreaterThan(0);
 
-    // select all and hide
-    const selectAll = screen.getByRole('checkbox');
-    fireEvent.click(selectAll);
+    // select all and hide (there are multiple checkboxes: header + row)
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]);
     fireEvent.click(screen.getByText('Скрыть выбранные'));
     // row should disappear
     expect(screen.queryByText('B')).not.toBeInTheDocument();
