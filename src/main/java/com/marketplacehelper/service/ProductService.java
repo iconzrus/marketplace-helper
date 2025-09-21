@@ -89,6 +89,17 @@ public class ProductService {
     public List<Product> getLowStockProducts(Integer threshold) {
         return productRepository.findLowStockProducts(threshold);
     }
+
+    public Product updateProductPrice(Long id, java.math.BigDecimal newPrice) {
+        return productRepository.findById(id)
+                .map(product -> {
+                    if (newPrice != null) {
+                        product.setPrice(newPrice);
+                    }
+                    return productRepository.save(product);
+                })
+                .orElseThrow(() -> new RuntimeException("Товар с ID " + id + " не найден"));
+    }
 }
 
 

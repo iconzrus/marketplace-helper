@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PriceRecommendationDto {
 
+    private Long wbProductId;
     private String wbArticle;
     private String name;
     private BigDecimal currentPrice;
@@ -60,6 +61,14 @@ public class PriceRecommendationDto {
 
     public void setPriceDelta(BigDecimal priceDelta) {
         this.priceDelta = priceDelta;
+    }
+
+    public Long getWbProductId() {
+        return wbProductId;
+    }
+
+    public void setWbProductId(Long wbProductId) {
+        this.wbProductId = wbProductId;
     }
 }
 

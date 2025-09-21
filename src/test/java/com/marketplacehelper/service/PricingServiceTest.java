@@ -43,6 +43,7 @@ class PricingServiceTest {
         PriceRecommendationDto rec = recs.get(0);
         assertThat(rec.getRecommendedPrice()).isEqualByComparingTo("1000.00");
         assertThat(rec.getPriceDelta()).isEqualByComparingTo("0.00");
+        assertThat(rec.getWbProductId()).isNull();
     }
 }
 

@@ -27,6 +27,7 @@ public class PricingService {
             BigDecimal recommended = recommendPrice(item, target);
             if (recommended != null && item.getWbPrice() != null) {
                 PriceRecommendationDto dto = new PriceRecommendationDto();
+                dto.setWbProductId(item.getWbProductId());
                 dto.setWbArticle(item.getWbArticle());
                 dto.setName(item.getName());
                 dto.setCurrentPrice(item.getWbPrice());

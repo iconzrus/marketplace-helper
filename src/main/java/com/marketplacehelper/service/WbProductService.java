@@ -101,6 +101,15 @@ public class WbProductService {
     public List<WbProduct> getWbProductsByDiscount(Integer minDiscount) {
         return wbProductRepository.findByDiscountGreaterThan(minDiscount);
     }
+
+    public WbProduct updateWbProductPrice(Long id, BigDecimal newPrice) {
+        return wbProductRepository.findById(id)
+                .map(wbProduct -> {
+                    if (newPrice != null) wbProduct.setPrice(newPrice);
+                    return wbProductRepository.save(wbProduct);
+                })
+                .orElseThrow(() -> new RuntimeException("Товар WB с ID " + id + " не найден"));
+    }
 }
 
 
