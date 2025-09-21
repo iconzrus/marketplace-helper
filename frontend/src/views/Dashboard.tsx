@@ -3,7 +3,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../App';
-import { Area, AreaChart, Tooltip, ResponsiveContainer, defs, linearGradient, stop } from 'recharts';
+import { Area, AreaChart, Tooltip, ResponsiveContainer } from 'recharts';
 
 type Alert = {
   type: 'LOW_MARGIN' | 'NEGATIVE_MARGIN' | 'LOW_STOCK';
