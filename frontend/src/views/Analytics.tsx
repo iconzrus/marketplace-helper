@@ -31,10 +31,13 @@ export default function Analytics() {
     bottom.addEventListener('scroll', syncFromBottom);
     top.addEventListener('scroll', syncFromTop);
 
-    const ro = new (window as any).ResizeObserver?.(() => {
-      setTopScrollWidth(table.scrollWidth);
-    }) ?? null;
-    if (ro) ro.observe(table);
+    let ro: any = null;
+    if (typeof (window as any).ResizeObserver === 'function') {
+      ro = new (window as any).ResizeObserver(() => {
+        setTopScrollWidth(table.scrollWidth);
+      });
+      ro.observe(table);
+    }
     // initial width
     setTopScrollWidth(table.scrollWidth);
 
