@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 
 describe('ImportView dry-run preview', () => {
   beforeEach(() => {
-    (global as any).fetch = vi.fn().mockResolvedValue({ json: async () => ({ created: 1, updated: 2, skipped: 0 }) });
+    (globalThis as any).fetch = vi.fn().mockResolvedValue({ json: async () => ({ created: 1, updated: 2, skipped: 0 }) });
   });
   it('shows preview block after selecting file in dry-run mode', async () => {
     const ctx: any = { handleFileUpload: vi.fn() };
