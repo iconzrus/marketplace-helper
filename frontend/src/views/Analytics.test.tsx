@@ -16,7 +16,7 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useOutletContext: () => useOutletContextMock() };
 });
 
-function Wrapper({ report }: { report: any }) {
+function Wrapper({ report, extra }: { report: any; extra?: Record<string, any> }) {
   const context: any = {
     // analytics
     analyticsReport: report,
@@ -30,6 +30,7 @@ function Wrapper({ report }: { report: any }) {
     percent: (n?: number) => String(n ?? ''),
     numberFormat: (n?: number) => String(n ?? ''),
     sourceBadge: (v?: any) => (v === 'MERGED' ? 'WB + Excel' : v === 'LOCAL_ONLY' ? 'Excel' : v === 'WB_ONLY' ? 'Wildberries' : '—'),
+    ...(extra ?? {})
   };
   return (
     <MemoryRouter>
@@ -68,37 +69,7 @@ describe('Analytics table UX (render)', () => {
       requiresAttention: [{ name: 'X', wbArticle: '3', wbPrice: 15 }]
     };
 
-    // Provide handler via context to render the button
-    const Ctx = createContext<any>(null);
-    function useOutletContextMock() { return useContext(Ctx); }
-    vi.doMock('react-router-dom', async () => {
-      const actual: any = await vi.importActual('react-router-dom');
-      return { ...actual, useOutletContext: () => useOutletContextMock() };
-    });
-
-    const ctxValue: any = {
-      analyticsReport: sample,
-      loadingAnalytics: false,
-      minMarginPercent: undefined,
-      setMinMarginPercent: () => {},
-      handleApplyMinMargin: () => {},
-      handleExport: () => {},
-      currency: (n?: number) => String(n ?? ''),
-      percent: (n?: number) => String(n ?? ''),
-      numberFormat: (n?: number) => String(n ?? ''),
-      sourceBadge: () => 'WB + Excel',
-      __openWhatIf: () => {}
-    };
-
-    const view = (
-      <MemoryRouter>
-        <Ctx.Provider value={ctxValue}>
-          <Analytics />
-        </Ctx.Provider>
-      </MemoryRouter>
-    );
-
-    render(view);
+    render(<Wrapper report={sample} extra={{ __openWhatIf: () => {} }} />);
     expect(screen.getByText('Что если…')).toBeInTheDocument();
   });
 });
