@@ -317,6 +317,10 @@ button:not(:disabled):hover {
   overflow-x: auto;
 }
 
+/* Synchronized top scrollbar for wide tables */
+.top-scrollbar { overflow-x: auto; overflow-y: hidden; height: 12px; margin: 8px 0 -4px; }
+.top-scrollbar > div { height: 1px; }
+
 .table-wrapper--compact { padding: 8px; }
 table.table--compact { font-size: 13px; line-height: 1.25; }
 table.table--compact th, table.table--compact td { padding: 6px 8px; white-space: nowrap; }

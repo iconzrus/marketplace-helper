@@ -1,9 +1,49 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../App';
 
 export default function Analytics() {
   const ctx = useOutletContext<AppOutletContext>();
+  const attentionWrapperRef = useRef<HTMLDivElement | null>(null);
+  const attentionTableRef = useRef<HTMLTableElement | null>(null);
+  const topScrollRef = useRef<HTMLDivElement | null>(null);
+  const [topScrollWidth, setTopScrollWidth] = useState<number>(0);
+
+  useEffect(() => {
+    const table = attentionTableRef.current;
+    const bottom = attentionWrapperRef.current;
+    const top = topScrollRef.current;
+    if (!table || !bottom || !top) return;
+
+    const syncFromBottom = () => {
+      if (!top || !bottom) return;
+      if (Math.abs((top.scrollLeft ?? 0) - (bottom.scrollLeft ?? 0)) > 1) {
+        top.scrollLeft = bottom.scrollLeft;
+      }
+    };
+    const syncFromTop = () => {
+      if (!top || !bottom) return;
+      if (Math.abs((bottom.scrollLeft ?? 0) - (top.scrollLeft ?? 0)) > 1) {
+        bottom.scrollLeft = top.scrollLeft;
+      }
+    };
+
+    bottom.addEventListener('scroll', syncFromBottom);
+    top.addEventListener('scroll', syncFromTop);
+
+    const ro = new (window as any).ResizeObserver?.(() => {
+      setTopScrollWidth(table.scrollWidth);
+    }) ?? null;
+    if (ro) ro.observe(table);
+    // initial width
+    setTopScrollWidth(table.scrollWidth);
+
+    return () => {
+      bottom.removeEventListener('scroll', syncFromBottom);
+      top.removeEventListener('scroll', syncFromTop);
+      if (ro && table) ro.unobserve(table);
+    };
+  }, [ctx.analyticsReport]);
   // Placeholder: trend charts could use /api/snapshots?from=...&to=...
   return (
     <section className="panel">
@@ -77,9 +117,13 @@ export default function Analytics() {
             </table>
           </div>
 
-          <div className="table-wrapper table-wrapper--compact">
+          {/* Top horizontal scrollbar synced with the table below */}
+          <div className="top-scrollbar" ref={topScrollRef}>
+            <div style={{ width: topScrollWidth }} />
+          </div>
+          <div className="table-wrapper table-wrapper--compact" ref={attentionWrapperRef}>
             <h3>Требуют корректировки или сопоставления</h3>
-            <table className="table table--compact">
+            <table className="table table--compact" ref={attentionTableRef}>
               <thead>
                 <tr>
                   <th>Товар</th>
