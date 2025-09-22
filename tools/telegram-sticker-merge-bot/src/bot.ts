@@ -339,8 +339,9 @@ async function createSetsAndFill(ctx: MyContext) {
         chunkIndex * MAX_STICKERS_PER_SET,
         (chunkIndex + 1) * MAX_STICKERS_PER_SET
       );
-      const short = await generateShortNameForChunk(ctx.api, baseShortInput, chunkIndex);
-      const setTitle = chunkIndex === 0 ? title : `${title} (${chunkIndex + 1})`;
+      const shortBase = await generateShortNameForChunk(ctx.api, baseShortInput, chunkIndex);
+      const short = `${shortBase}_${sticker_format}`; // ensure unique name per format
+      const setTitle = chunkIndex === 0 ? `${title} • ${sticker_format}` : `${title} • ${sticker_format} (${chunkIndex + 1})`;
 
       const summary = { shortName: short, title: setTitle, format, total: chunk.length, added: 0, skipped: [] as Array<{reason: string; index: number}> };
 
@@ -505,19 +506,24 @@ async function createCustomEmojiSets(ctx: MyContext) {
         if (verify.stickers.length < chunk.length) {
           const missing = chunk.length - verify.stickers.length;
           if (ctx.session.debug) await ctx.reply(`DEBUG: verify count=${verify.stickers.length}/${chunk.length}, retry add missing≈${missing}`);
-          let retries = 0;
-          while (retries < 2 && (await ctx.api.getStickerSet(short)).stickers.length < chunk.length) {
+          const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+          let current = verify.stickers.length;
+          let pass = 0;
+          while (current < chunk.length && pass < 3) {
             for (const it of chunk.slice(1)) {
+              if (current >= chunk.length) break;
               try {
                 const input: any = { emoji_list: [it.emoji || "❤️"], sticker: it.fileId, format: sticker_format };
                 await (ctx.api as any).raw.addStickerToSet({ user_id: userId, name: short, sticker: input });
+                await sleep(150);
+                const v = await ctx.api.getStickerSet(short);
+                current = v.stickers.length;
               } catch {}
             }
-            retries += 1;
+            pass += 1;
           }
-          const after = await ctx.api.getStickerSet(short);
-          if (ctx.session.debug) await ctx.reply(`DEBUG: verify after retry count=${after.stickers.length}/${chunk.length}`);
-          added = Math.min(chunk.length, after.stickers.length);
+          if (ctx.session.debug) await ctx.reply(`DEBUG: verify after retry count=${current}/${chunk.length}`);
+          added = Math.min(chunk.length, current);
         }
       } catch {}
       results.push(`Готово: ${setTitle} — ${added}/${chunk.length}${skipped ? ", пропущено " + skipped : ""}\nt.me/addstickers/${short}`);
