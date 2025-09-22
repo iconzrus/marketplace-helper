@@ -438,9 +438,13 @@ async function createCustomEmojiSets(ctx) {
                     const buf = await downloadFile(ctx.api, it.fileId);
                     const uploaded = await uploadSticker(ctx.api, userId, buf, format);
                     const input = { emoji_list: [it.emoji || "❤️"], sticker: uploaded };
-                    // Explicitly pass sticker_format for custom emoji to avoid "sticker format must be non-empty"
-                    const addOpts = { sticker_format };
-                    await ctx.api.addStickerToSet(userId, short, input, addOpts);
+                    // Use raw API with single payload including sticker_format (grammy convenience method has no extra params)
+                    await ctx.api.raw.addStickerToSet({
+                        user_id: userId,
+                        name: short,
+                        sticker: input,
+                        sticker_format,
+                    });
                     added += 1;
                 }
                 catch (e) {
