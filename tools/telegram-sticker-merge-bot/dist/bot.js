@@ -435,11 +435,12 @@ async function createCustomEmojiSets(ctx) {
             for (const it of chunk.slice(1)) {
                 try {
                     const input = { emoji_list: [it.emoji || "❤️"], sticker: it.fileId };
-                    // Use raw API; server knows the set's format
+                    // Use raw API; include sticker_format explicitly to satisfy API
                     await ctx.api.raw.addStickerToSet({
                         user_id: userId,
                         name: short,
                         sticker: input,
+                        sticker_format,
                     });
                     added += 1;
                 }
