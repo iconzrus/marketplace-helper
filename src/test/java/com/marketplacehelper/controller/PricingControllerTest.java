@@ -66,6 +66,59 @@ class PricingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.updated").value(0));
     }
+
+    @Test
+    void batchUpdate_shouldApplyConstraintsAndDryRun() throws Exception {
+        // current price = 100
+        com.marketplacehelper.model.WbProduct wb = new com.marketplacehelper.model.WbProduct();
+        wb.setId(1L);
+        wb.setPrice(new java.math.BigDecimal("100"));
+        when(wbProductService.getWbProductById(1L)).thenReturn(java.util.Optional.of(wb));
+
+        String payload = "{" +
+                "\"dryRun\":true," +
+                "\"roundingRule\":\"NEAREST_10\"," +
+                "\"floorPrice\":90," +
+                "\"ceilPrice\":150," +
+                "\"maxDeltaPercent\":20," +
+                "\"items\":[{" +
+                "\"wbProductId\":1," +
+                "\"newPrice\":111" +
+                "}]" +
+                "}";
+
+        mockMvc.perform(post("/api/pricing/batch-update")
+                        .contentType("application/json")
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].success").value(true))
+                .andExpect(jsonPath("$.items[0].message").value("DRY_RUN"))
+                // 111 with NEAREST_10 -> 110
+                .andExpect(jsonPath("$.items[0].appliedPrice").value(110));
+    }
+
+    @Test
+    void batchUpdate_shouldRejectTooLargeDelta() throws Exception {
+        com.marketplacehelper.model.WbProduct wb = new com.marketplacehelper.model.WbProduct();
+        wb.setId(2L);
+        wb.setPrice(new java.math.BigDecimal("100"));
+        when(wbProductService.getWbProductById(2L)).thenReturn(java.util.Optional.of(wb));
+
+        String payload = "{" +
+                "\"maxDeltaPercent\":10," +
+                "\"items\":[{" +
+                "\"wbProductId\":2," +
+                "\"newPrice\":200" + // 100% delta
+                "}]" +
+                "}";
+
+        mockMvc.perform(post("/api/pricing/batch-update")
+                        .contentType("application/json")
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.failed").value(1))
+                .andExpect(jsonPath("$.items[0].success").value(false));
+    }
 }
 
 

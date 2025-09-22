@@ -50,6 +50,10 @@ export interface SessionData {
   desiredShortName?: string;
   customEmojiIds?: string[]; // collected custom emoji ids from messages
   emojiCollectMode?: "items" | "full_sets";
+  // Reserved for future filters
+  emojiFilter?: "none";
+  // Debug mode: when true, bot replies with step-by-step logs into chat
+  debug?: boolean;
 }
 
 export const MAX_STICKERS_PER_SET = 120; // conservative default; API may allow more for video

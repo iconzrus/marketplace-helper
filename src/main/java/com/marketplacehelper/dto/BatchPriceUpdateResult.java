@@ -10,6 +10,7 @@ public class BatchPriceUpdateResult {
         private String wbArticle;
         private boolean success;
         private String message;
+        private java.math.BigDecimal appliedPrice;
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
@@ -25,6 +26,9 @@ public class BatchPriceUpdateResult {
 
         public String getMessage() { return message; }
         public void setMessage(String message) { this.message = message; }
+
+        public java.math.BigDecimal getAppliedPrice() { return appliedPrice; }
+        public void setAppliedPrice(java.math.BigDecimal appliedPrice) { this.appliedPrice = appliedPrice; }
     }
 
     private int updated;
