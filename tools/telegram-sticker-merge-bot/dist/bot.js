@@ -13,6 +13,8 @@ function initial() {
         chosen: [],
         customEmojiIds: [],
         emojiCollectMode: "items",
+        emojiFilter: "none",
+        debug: false,
     };
 }
 const token = process.env.BOT_TOKEN;
@@ -62,6 +64,15 @@ bot.command("start", async (ctx) => {
 bot.command("cancel", async (ctx) => {
     ctx.session = initial();
     await ctx.reply("Готово. Начни заново командой /start.");
+});
+// Debug toggles
+bot.command("debug_on", async (ctx) => {
+    ctx.session.debug = true;
+    await ctx.reply("Debug: ON. Буду слать подробные шаги сюда.");
+});
+bot.command("debug_off", async (ctx) => {
+    ctx.session.debug = false;
+    await ctx.reply("Debug: OFF.");
 });
 bot.on("message:text", async (ctx, next) => {
     const text = ctx.message.text.trim();
@@ -184,12 +195,16 @@ bot.command("emoji_items", async (ctx) => {
     ctx.session.emojiCollectMode = "items";
     await ctx.reply("Режим эмодзи: только присланные. Пришли эмодзи, затем /emoji_done.");
 });
+// removed /emoji_hearts
 bot.command("emoji_done", async (ctx) => {
     if (ctx.session.stage !== "awaiting_custom_emoji") {
         await ctx.reply("Сначала /emoji или /emoji_full, потом пришли эмодзи.");
         return;
     }
     const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
+    if (ctx.session.debug) {
+        await ctx.reply(`DEBUG: собрал custom_emoji_ids: ${ids.length}`);
+    }
     if (ids.length === 0) {
         await ctx.reply("Пока нет эмодзи. Пришли текст с эмодзи и повтори /emoji_done.");
         return;
@@ -327,6 +342,9 @@ async function createCustomEmojiSets(ctx) {
     const ids = Array.from(new Set(ctx.session.customEmojiIds ?? []));
     const stickersResp = await ctx.api.getCustomEmojiStickers(ids);
     const stickers = stickersResp ?? [];
+    if (ctx.session.debug) {
+        await ctx.reply(`DEBUG: getCustomEmojiStickers → ${stickers.length} элементов`);
+    }
     let expanded = stickers;
     if (ctx.session.emojiCollectMode === "full_sets") {
         const setNames = Array.from(new Set(expanded.map((s) => s.set_name || s.sticker_set_name).filter(Boolean)));
@@ -335,24 +353,35 @@ async function createCustomEmojiSets(ctx) {
             try {
                 const set = await ctx.api.getStickerSet(name);
                 full.push(...set.stickers);
+                if (ctx.session.debug)
+                    await ctx.reply(`DEBUG: загрузил набор ${name}: +${set.stickers.length}`);
             }
             catch { }
         }
         expanded = full.length ? full : expanded;
+        if (ctx.session.debug)
+            await ctx.reply(`DEBUG: после expand по наборам → ${expanded.length}`);
     }
     const items = expanded.map((s) => ({
         fileId: s.file_id,
-        emoji: s.emoji ?? "",
+        // Telegram requires non-empty emoji_list; set a sensible default if missing
+        emoji: s.emoji ?? "❤️",
         format: s.is_animated ? "animated" : s.is_video ? "video" : "static",
     }));
+    if (ctx.session.debug)
+        await ctx.reply(`DEBUG: items сформировано: ${items.length}`);
+    // Deduplicate only by file id
     const seen = new Set();
-    const deduped = [];
+    const byFile = [];
     for (const it of items) {
         if (!seen.has(it.fileId)) {
             seen.add(it.fileId);
-            deduped.push(it);
+            byFile.push(it);
         }
     }
+    const deduped = byFile;
+    if (ctx.session.debug)
+        await ctx.reply(`DEBUG: после dedup fileId → ${deduped.length}`);
     const byFormat = new Map();
     for (const it of deduped) {
         const list = byFormat.get(it.format) ?? [];
@@ -361,20 +390,27 @@ async function createCustomEmojiSets(ctx) {
     }
     const results = [];
     for (const [format, list] of byFormat.entries()) {
+        if (ctx.session.debug)
+            await ctx.reply(`DEBUG: формат ${format}, элементов: ${list.length}`);
         for (let chunkIndex = 0; chunkIndex * MAX_STICKERS_PER_SET < list.length; chunkIndex++) {
             const chunk = list.slice(chunkIndex * MAX_STICKERS_PER_SET, (chunkIndex + 1) * MAX_STICKERS_PER_SET);
             const short = await generateShortNameForChunk(ctx.api, baseShortInput, chunkIndex);
             const setTitle = chunkIndex === 0 ? title : `${title} (${chunkIndex + 1})`;
+            if (ctx.session.debug)
+                await ctx.reply(`DEBUG: создаю ${setTitle} (${short}) c ${chunk.length} шт.`);
             const first = chunk[0];
             const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
             try {
                 const firstBuf = await downloadFile(ctx.api, first.fileId);
                 const firstUploaded = await uploadSticker(ctx.api, userId, firstBuf, format);
-                const firstInput = { emoji_list: [first.emoji ?? ""], sticker: firstUploaded };
+                const firstInput = { emoji_list: [first.emoji || "❤️"], sticker: firstUploaded };
                 await ctx.api.createNewStickerSet(userId, short, setTitle, [firstInput], { sticker_format, sticker_type: "custom_emoji" });
+                if (ctx.session.debug)
+                    await ctx.reply(`DEBUG: создан набор ${setTitle}`);
             }
             catch (e) {
-                await ctx.reply(`Не удалось создать набор ${setTitle}: ${e.description ?? e.message}`);
+                const msg = e?.description || e?.message || "error";
+                await ctx.reply(`Не удалось создать набор ${setTitle}: ${msg}`);
                 continue;
             }
             let added = 1;
@@ -383,12 +419,14 @@ async function createCustomEmojiSets(ctx) {
                 try {
                     const buf = await downloadFile(ctx.api, it.fileId);
                     const uploaded = await uploadSticker(ctx.api, userId, buf, format);
-                    const input = { emoji_list: [it.emoji ?? ""], sticker: uploaded };
+                    const input = { emoji_list: [it.emoji || "❤️"], sticker: uploaded };
                     await ctx.api.addStickerToSet(userId, short, input);
                     added += 1;
                 }
                 catch (e) {
                     skipped += 1;
+                    if (ctx.session.debug)
+                        await ctx.reply(`DEBUG: skip index=${added + skipped} причина=${e?.description || e?.message || 'error'}`);
                 }
             }
             results.push(`Готово: ${setTitle} — ${added}/${chunk.length}${skipped ? ", пропущено " + skipped : ""}\nt.me/addstickers/${short}`);
