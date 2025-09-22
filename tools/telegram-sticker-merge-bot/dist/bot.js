@@ -296,8 +296,10 @@ async function createSetsAndFill(ctx) {
     for (const [format, list] of byFormat.entries()) {
         for (let chunkIndex = 0; chunkIndex * MAX_STICKERS_PER_SET < list.length; chunkIndex++) {
             const chunk = list.slice(chunkIndex * MAX_STICKERS_PER_SET, (chunkIndex + 1) * MAX_STICKERS_PER_SET);
-            const short = await generateShortNameForChunk(ctx.api, baseShortInput, chunkIndex);
-            const setTitle = chunkIndex === 0 ? title : `${title} (${chunkIndex + 1})`;
+            const shortBase = await generateShortNameForChunk(ctx.api, baseShortInput, chunkIndex);
+            const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
+            const short = `${shortBase}_${sticker_format}`;
+            const setTitle = chunkIndex === 0 ? `${title} • ${sticker_format}` : `${title} • ${sticker_format} (${chunkIndex + 1})`;
             const summary = { shortName: short, title: setTitle, format, total: chunk.length, added: 0, skipped: [] };
             const first = chunk[0];
             let created = false;
@@ -417,7 +419,7 @@ async function createCustomEmojiSets(ctx) {
             if (ctx.session.debug)
                 await ctx.reply(`DEBUG: создаю ${setTitle} (${short}) c ${chunk.length} шт.`);
             const first = chunk[0];
-            const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
+            // sticker_format already defined above
             try {
                 // For custom emoji, reuse original file_id directly; include per-sticker format
                 const firstInput = { emoji_list: [first.emoji || "❤️"], sticker: first.fileId, format: sticker_format };
