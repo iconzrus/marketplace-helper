@@ -301,6 +301,7 @@ async function createSetsAndFill(ctx) {
             const setTitle = chunkIndex === 0 ? `${title} • ${sticker_format}` : `${title} • ${sticker_format} (${chunkIndex + 1})`;
             const summary = { shortName: short, title: setTitle, format, total: chunk.length, added: 0, skipped: [] };
             const first = chunk[0];
+            const attemptedIds = new Set(chunk.map((c) => c.fileId));
             let created = false;
             try {
                 const firstSet = ctx.session.sourceSets.find((s) => s.name === first.setName);
@@ -479,6 +480,20 @@ async function createCustomEmojiSets(ctx) {
                         await ctx.reply(`DEBUG: verify after retry count=${current}/${chunk.length}`);
                     added = Math.min(chunk.length, current);
                 }
+                // Final diff report
+                try {
+                    const latest = await ctx.api.getStickerSet(short);
+                    const present = new Set(latest.stickers.map((s) => s.file_id));
+                    const missingList = [];
+                    for (const id of attemptedIds)
+                        if (!present.has(id))
+                            missingList.push(id);
+                    if (ctx.session.debug) {
+                        await ctx.reply(`DEBUG: final count=${latest.stickers.length}/${chunk.length}; missing=${missingList.length}`);
+                    }
+                    added = Math.min(chunk.length, latest.stickers.length);
+                }
+                catch { }
             }
             catch { }
             results.push(`Готово: ${setTitle} — ${added}/${chunk.length}${skipped ? ", пропущено " + skipped : ""}\nt.me/addstickers/${short}`);
