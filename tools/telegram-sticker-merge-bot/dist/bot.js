@@ -438,7 +438,9 @@ async function createCustomEmojiSets(ctx) {
                     const buf = await downloadFile(ctx.api, it.fileId);
                     const uploaded = await uploadSticker(ctx.api, userId, buf, format);
                     const input = { emoji_list: [it.emoji || "❤️"], sticker: uploaded };
-                    await ctx.api.addStickerToSet(userId, short, input);
+                    // Explicitly pass sticker_format for custom emoji to avoid "sticker format must be non-empty"
+                    const addOpts = { sticker_format };
+                    await ctx.api.addStickerToSet(userId, short, input, addOpts);
                     added += 1;
                 }
                 catch (e) {
