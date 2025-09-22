@@ -498,6 +498,28 @@ async function createCustomEmojiSets(ctx: MyContext) {
           if (ctx.session.debug) await ctx.reply(`DEBUG: skip index=${added + skipped} причина=${e?.description || e?.message || 'error'}`);
         }
       }
+
+      // Verify final count and retry if Telegram silently missed some
+      try {
+        const verify = await ctx.api.getStickerSet(short);
+        if (verify.stickers.length < chunk.length) {
+          const missing = chunk.length - verify.stickers.length;
+          if (ctx.session.debug) await ctx.reply(`DEBUG: verify count=${verify.stickers.length}/${chunk.length}, retry add missing≈${missing}`);
+          let retries = 0;
+          while (retries < 2 && (await ctx.api.getStickerSet(short)).stickers.length < chunk.length) {
+            for (const it of chunk.slice(1)) {
+              try {
+                const input: any = { emoji_list: [it.emoji || "❤️"], sticker: it.fileId, format: sticker_format };
+                await (ctx.api as any).raw.addStickerToSet({ user_id: userId, name: short, sticker: input });
+              } catch {}
+            }
+            retries += 1;
+          }
+          const after = await ctx.api.getStickerSet(short);
+          if (ctx.session.debug) await ctx.reply(`DEBUG: verify after retry count=${after.stickers.length}/${chunk.length}`);
+          added = Math.min(chunk.length, after.stickers.length);
+        }
+      } catch {}
       results.push(`Готово: ${setTitle} — ${added}/${chunk.length}${skipped ? ", пропущено " + skipped : ""}\nt.me/addstickers/${short}`);
     }
   }

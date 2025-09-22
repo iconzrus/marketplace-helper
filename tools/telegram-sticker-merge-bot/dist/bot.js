@@ -419,8 +419,8 @@ async function createCustomEmojiSets(ctx) {
             const first = chunk[0];
             const sticker_format = format === "static" ? "static" : format === "animated" ? "animated" : "video";
             try {
-                // For custom emoji, reuse original file_id directly; server infers format from the set
-                const firstInput = { emoji_list: [first.emoji || "❤️"], sticker: first.fileId };
+                // For custom emoji, reuse original file_id directly; include per-sticker format
+                const firstInput = { emoji_list: [first.emoji || "❤️"], sticker: first.fileId, format: sticker_format };
                 await ctx.api.createNewStickerSet(userId, short, setTitle, [firstInput], { sticker_format, sticker_type: "custom_emoji" });
                 if (ctx.session.debug)
                     await ctx.reply(`DEBUG: создан набор ${setTitle}`);
@@ -434,13 +434,12 @@ async function createCustomEmojiSets(ctx) {
             let skipped = 0;
             for (const it of chunk.slice(1)) {
                 try {
-                    const input = { emoji_list: [it.emoji || "❤️"], sticker: it.fileId };
-                    // Use raw API; include sticker_format explicitly to satisfy API
+                    const input = { emoji_list: [it.emoji || "❤️"], sticker: it.fileId, format: sticker_format };
+                    // Use raw API with single payload; format is part of InputSticker
                     await ctx.api.raw.addStickerToSet({
                         user_id: userId,
                         name: short,
                         sticker: input,
-                        sticker_format,
                     });
                     added += 1;
                 }
