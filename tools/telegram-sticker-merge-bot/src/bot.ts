@@ -36,6 +36,8 @@ bot.use(
 );
 
 let cachedBotUsername: string | null = null;
+// Persist per-user debug preferences outside session (session resets often)
+const userDebug = new Map<number, boolean>();
 async function getBotUsername(api: Api): Promise<string> {
   if (cachedBotUsername) return cachedBotUsername;
   const me = await api.getMe();
@@ -63,7 +65,9 @@ async function generateShortNameForChunk(api: Api, userInput: string, chunkIndex
 }
 
 bot.command("start", async (ctx) => {
+  const prevDebug = userDebug.get(ctx.from!.id) ?? false;
   ctx.session = initial();
+  ctx.session.debug = prevDebug;
   await ctx.reply(
     [
       "Привет! Я соберу новый набор из твоих стикеров или эмодзи.",
@@ -76,18 +80,22 @@ bot.command("start", async (ctx) => {
 });
 
 bot.command("cancel", async (ctx) => {
+  const prevDebug = userDebug.get(ctx.from!.id) ?? false;
   ctx.session = initial();
+  ctx.session.debug = prevDebug;
   await ctx.reply("Готово. Начни заново командой /start.");
 });
 
 // Debug toggles
 bot.command("debug_on", async (ctx) => {
   ctx.session.debug = true;
+  userDebug.set(ctx.from!.id, true);
   await ctx.reply("Debug: ON. Буду слать подробные шаги сюда.");
 });
 
 bot.command("debug_off", async (ctx) => {
   ctx.session.debug = false;
+  userDebug.set(ctx.from!.id, false);
   await ctx.reply("Debug: OFF.");
 });
 
@@ -204,7 +212,9 @@ bot.callbackQuery(/page:(\d+)/, async (ctx) => {
 });
 
 bot.command("emoji", async (ctx) => {
+  const prevDebug = userDebug.get(ctx.from!.id) ?? false;
   ctx.session = initial();
+  ctx.session.debug = prevDebug;
   ctx.session.stage = "awaiting_custom_emoji";
   ctx.session.customEmojiIds = [];
   ctx.session.emojiCollectMode = "items";
@@ -212,7 +222,9 @@ bot.command("emoji", async (ctx) => {
 });
 
 bot.command("emoji_full", async (ctx) => {
+  const prevDebug = userDebug.get(ctx.from!.id) ?? false;
   ctx.session = initial();
+  ctx.session.debug = prevDebug;
   ctx.session.stage = "awaiting_custom_emoji";
   ctx.session.customEmojiIds = [];
   ctx.session.emojiCollectMode = "full_sets";
@@ -220,7 +232,9 @@ bot.command("emoji_full", async (ctx) => {
 });
 
 bot.command("emoji_items", async (ctx) => {
+  const prevDebug = userDebug.get(ctx.from!.id) ?? false;
   ctx.session = initial();
+  ctx.session.debug = prevDebug;
   ctx.session.stage = "awaiting_custom_emoji";
   ctx.session.customEmojiIds = [];
   ctx.session.emojiCollectMode = "items";
@@ -263,7 +277,9 @@ async function loadSourceSets(api: Api, ctx: MyContext) {
   }
   if (loaded.length === 0) {
     await ctx.reply("Не удалось получить ни одного набора. Попробуй /start.");
+    const prevDebug = userDebug.get(ctx.from!.id) ?? false;
     ctx.session = initial();
+    ctx.session.debug = prevDebug;
     return;
   }
   ctx.session.sourceSets = loaded;
@@ -379,7 +395,9 @@ async function createSetsAndFill(ctx: MyContext) {
   } else {
     await ctx.reply(lines.join("\n\n"));
   }
+  const prevDebug = userDebug.get(ctx.from!.id) ?? false;
   ctx.session = initial();
+  ctx.session.debug = prevDebug;
 }
 
 async function createCustomEmojiSets(ctx: MyContext) {
@@ -487,7 +505,9 @@ async function createCustomEmojiSets(ctx: MyContext) {
   } else {
     await ctx.reply(results.join("\n\n"));
   }
+  const prevDebug2 = userDebug.get(ctx.from!.id) ?? false;
   ctx.session = initial();
+  ctx.session.debug = prevDebug2;
 }
 
 if (process.env.NODE_ENV !== "test") {
