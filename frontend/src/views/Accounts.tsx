@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Accounts() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [hasToken, setHasToken] = useState<boolean>(false);
   const [tokenInput, setTokenInput] = useState<string>('');
   const [seller, setSeller] = useState<any | null>(null);
@@ -11,27 +12,39 @@ export default function Accounts() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const { data } = await axios.get('/api/v2/wb-api/token');
-        setHasToken(Boolean((data as any)?.hasToken));
-        const mock = await axios.get('/api/v2/wb-api/mock-mode');
-        setMockEnabled(Boolean((mock.data as any)?.mock));
-        if ((data as any)?.hasToken) {
-          try {
-            const s = await axios.get('/api/v2/wb-api/seller-info');
+  const loadAccountsData = async () => {
+    try {
+      const { data } = await axios.get('/api/v2/wb-api/token');
+      setHasToken(Boolean((data as any)?.hasToken));
+      const mock = await axios.get('/api/v2/wb-api/mock-mode');
+      const isMockEnabled = Boolean((mock.data as any)?.mock);
+      setMockEnabled(isMockEnabled);
+      
+      // Only fetch seller info if token exists AND mock is disabled
+      if ((data as any)?.hasToken && !isMockEnabled) {
+        try {
+          const s = await axios.get('/api/v2/wb-api/seller-info');
+          // Only set seller if response is not mock data
+          if (!s.data?.mock) {
             setSeller(s.data);
-          } catch (e) {
-            console.error('Failed to fetch seller info', e);
+          } else {
+            setSeller(null);
           }
+        } catch (e) {
+          console.error('Failed to fetch seller info', e);
+          setSeller(null);
         }
-      } catch (e) {
-        console.error('Failed to init accounts', e);
+      } else {
+        setSeller(null);
       }
-    };
-    init();
-  }, []);
+    } catch (e) {
+      console.error('Failed to load accounts data', e);
+    }
+  };
+
+  useEffect(() => {
+    loadAccountsData();
+  }, [location.pathname]); // Reload when returning to this page
 
   const saveToken = async () => {
     setLoading(true);
@@ -61,6 +74,7 @@ export default function Accounts() {
     try {
       await axios.post('/api/v2/wb-api/mock-mode?enabled=true');
       setMockEnabled(true);
+      setSeller(null); // Clear seller info when entering mock mode
       navigate('/demo');
     } catch (err) {
       setError('Не удалось включить Mock режим');
