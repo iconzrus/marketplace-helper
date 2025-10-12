@@ -96,7 +96,7 @@ export default function Accounts() {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Выберите кабинет для работы</h2>
         <p className="text-secondary text-sm">Подключите реальный WB API токен или используйте тестовый кабинет для разработки</p>
@@ -104,7 +104,7 @@ export default function Accounts() {
       
       {error && <div className="message message--error mb-4">{error}</div>}
       
-      <div className="grid grid-cols-2">
+      <div className="grid grid-cols-2" style={{ gap: 'var(--space-6)' }}>
         {/* Real Cabinet Card */}
         <div className="card">
           <div className="card__header">

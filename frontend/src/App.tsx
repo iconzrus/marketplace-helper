@@ -792,33 +792,80 @@ const App = () => {
 
   if (!authToken) {
     return (
-      <div className="app">
-        <header className="app__header">
-          <div className="app__header-content">
-            <h1>Marketplace Helper</h1>
-            <p>
-              Демонстрационное приложение для менеджера по маркетплейсам. Загружайте корпоративные Excel-данные,
-              просматривайте товары Wildberries и анализируйте маржинальность.
-            </p>
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg-app)',
+        padding: 'var(--space-6)'
+      }}>
+        <div style={{ 
+          maxWidth: '480px', 
+          width: '100%',
+          textAlign: 'center',
+          marginBottom: 'var(--space-8)'
+        }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            background: 'linear-gradient(135deg, var(--brand-500), var(--brand-700))',
+            borderRadius: 'var(--radius-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto var(--space-5)',
+            fontSize: '2rem',
+            color: 'white',
+            fontWeight: 700
+          }}>M</div>
+          <h1 style={{ fontSize: '2rem', marginBottom: 'var(--space-3)' }}>Marketplace Helper</h1>
+          <p className="text-secondary" style={{ fontSize: '1rem' }}>
+            Демонстрационное приложение для менеджера по маркетплейсам
+          </p>
+        </div>
+        
+        <div className="card" style={{ maxWidth: '420px', width: '100%' }}>
+          <div className="card__header">
+            <h2 className="card__title">Вход в систему</h2>
+            <p className="card__description">Укажите логин и пароль для доступа к кабинету</p>
           </div>
-        </header>
-        <div className="auth-container">
-          <section className="panel auth-panel">
-            <h2>Вход в систему</h2>
-            <p>Укажите логин и пароль, чтобы открыть рабочий кабинет и управлять товарами Wildberries.</p>
-            {authError && <div className="message message--error">{authError}</div>}
-            <form className="auth-form" onSubmit={handleLogin}>
-              <label>
-                <span>Логин</span>
-                <input value={login} onChange={event => setLogin(event.target.value)} autoComplete="username" placeholder="Введите логин" required />
+          
+          {authError && <div className="message message--error">{authError}</div>}
+          
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontWeight: 500, fontSize: '0.875rem' }}>
+                Логин
               </label>
-              <label>
-                <span>Пароль</span>
-                <input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" placeholder="Введите пароль" required />
+              <input 
+                value={login} 
+                onChange={event => setLogin(event.target.value)} 
+                autoComplete="username" 
+                placeholder="Введите логин" 
+                required 
+              />
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontWeight: 500, fontSize: '0.875rem' }}>
+                Пароль
               </label>
-              <button type="submit" disabled={authLoading}>{authLoading ? 'Вход…' : 'Войти'}</button>
-            </form>
-          </section>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={event => setPassword(event.target.value)} 
+                autoComplete="current-password" 
+                placeholder="Введите пароль" 
+                required 
+              />
+            </div>
+            
+            <button type="submit" className="btn btn--primary btn--lg" disabled={authLoading} style={{ marginTop: 'var(--space-2)' }}>
+              {authLoading ? 'Вход…' : 'Войти'}
+            </button>
+          </form>
         </div>
       </div>
     );
