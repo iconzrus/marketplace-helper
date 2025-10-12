@@ -200,6 +200,7 @@ const App = () => {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<string | null>(null);
   const [sellerInfo, setSellerInfo] = useState<SellerInfo | null>(null);
+  const [mockMode, setMockMode] = useState<boolean>(false);
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -243,6 +244,14 @@ const App = () => {
     } catch (_) {
       setSellerInfo(null);
     }
+  };
+
+  const fetchMockMode = async () => {
+    if (!authToken) return;
+    try {
+      const { data } = await axios.get<{ mock: boolean }>('/api/v2/wb-api/mock-mode');
+      setMockMode(Boolean((data as any)?.mock));
+    } catch (_) {}
   };
 
   const handleLogout = useCallback((message?: string) => {
@@ -453,6 +462,7 @@ const App = () => {
     fetchWbProducts();
     fetchWbStatuses();
     fetchSellerInfo();
+    fetchMockMode();
     fetchValidation();
     fetchAlerts();
   }, [authToken]);
@@ -814,6 +824,19 @@ const App = () => {
           </div>
         </div>
         <div className="auth-status">
+          <label className="toggle">
+            <input type="checkbox" checked={mockMode} onChange={async e => {
+              try {
+                const enabled = e.target.checked;
+                await axios.post(`/api/v2/wb-api/mock-mode?enabled=${String(enabled)}`);
+                setMockMode(enabled);
+                // при смене режима заново загрузим данные
+                await fetchWbProducts();
+                await fetchSellerInfo();
+              } catch (_) {}
+            }} />
+            Mock режим
+          </label>
           <label className="toggle">
             <input type="checkbox" checked={theme === 'dark'} onChange={e => setTheme(e.target.checked ? 'dark' : 'light')} />
             Тёмная тема

@@ -33,6 +33,7 @@ public class WbApiService {
     private final String mockDataPath;
 
     private List<Map<String, Object>> cachedMockProducts;
+    private volatile boolean runtimeMockMode;
 
     public WbApiService(RestTemplate wbRestTemplate,
                         WbApiConfig wbApiConfig,
@@ -48,6 +49,7 @@ public class WbApiService {
         this.resourceLoader = resourceLoader;
         this.mockMode = mockMode;
         this.mockDataPath = mockDataPath;
+        this.runtimeMockMode = mockMode;
     }
 
     public List<Map<String, Object>> getGoodsWithPrices() {
@@ -432,9 +434,16 @@ public class WbApiService {
         }
     }
 
+    public boolean isMockMode() {
+        return runtimeMockMode;
+    }
+
+    public void setMockMode(boolean enabled) {
+        this.runtimeMockMode = enabled;
+    }
+
     private boolean shouldUseMock() {
-        String token = wbApiConfig.getWbApiToken();
-        return mockMode || token == null || token.isBlank();
+        return runtimeMockMode;
     }
 
     private List<Map<String, Object>> loadMockProducts() {

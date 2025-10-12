@@ -229,6 +229,18 @@ public class WbProductController {
                     .body(Map.of("error", "Ошибка при получении информации о продавце: " + e.getMessage()));
         }
     }
+
+    // Runtime mock mode toggle
+    @GetMapping("/wb-api/mock-mode")
+    public ResponseEntity<?> getMockMode() {
+        return ResponseEntity.ok(Map.of("mock", wbApiService.isMockMode()));
+    }
+
+    @PostMapping("/wb-api/mock-mode")
+    public ResponseEntity<?> setMockMode(@RequestParam boolean enabled) {
+        wbApiService.setMockMode(enabled);
+        return ResponseEntity.ok(Map.of("mock", wbApiService.isMockMode()));
+    }
     
     /**
      * Синхронизация товаров из WB API в локальную базу данных
