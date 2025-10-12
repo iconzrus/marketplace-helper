@@ -7,6 +7,12 @@ export default function WbCatalog() {
   const ctx = useOutletContext<AppOutletContext>();
   const [recs, setRecs] = useState<Record<string, { recommendedPrice: number; delta: number; target: number }>>({});
   const [targetMargin, setTargetMargin] = useState<string>('15');
+  const [contentLocale] = useState<string>('ru');
+  const [contentCardsTotal, setContentCardsTotal] = useState<number | null>(null);
+  const [contentCardsCursor, setContentCardsCursor] = useState<{ nmID?: number; updatedAt?: string } | null>(null);
+  const [contentTrashTotal, setContentTrashTotal] = useState<number | null>(null);
+  const [contentLimits, setContentLimits] = useState<any | null>(null);
+  const [contentLoading, setContentLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const load = async () => {
@@ -40,37 +46,64 @@ export default function WbCatalog() {
           <button className="btn btn--secondary" onClick={ctx.fetchWbProducts} disabled={ctx.loadingWb}>{ctx.loadingWb ? 'Обновление…' : 'Обновить товары'}</button>
           <button className="btn" onClick={ctx.handleSyncWb}>Синхронизировать с WB</button>
           <button className="btn" onClick={async () => {
+            setContentLoading(true);
             try {
-              const { data } = await axios.post('/api/v2/wb-api/content/cards');
+              const { data } = await axios.post(`/api/v2/wb-api/content/cards?locale=${encodeURIComponent(contentLocale)}`);
               const total = (data?.cursor?.total) ?? (Array.isArray((data as any)?.data) ? (data as any).data.length : ((data as any)?.cards?.length ?? 0));
-              alert(`Контент: total=${total ?? '—'}`);
+              setContentCardsTotal(typeof total === 'number' ? total : 0);
+              setContentCardsCursor({ nmID: data?.cursor?.nmID, updatedAt: data?.cursor?.updatedAt });
             } catch (e: any) {
-              const msg = e?.response?.data?.error ?? e?.message ?? 'Не удалось получить карточки из Контента';
-              alert(String(msg).slice(0, 800));
+              setContentCardsTotal(null);
+              setContentCardsCursor(null);
+            } finally {
+              setContentLoading(false);
             }
           }}>Проверить карточки (Контент)</button>
           <button className="btn btn--secondary" onClick={async () => {
+            setContentLoading(true);
             try {
-              const { data } = await axios.get('/api/v2/wb-api/content/cards/limits');
-              alert(`Лимиты: ${JSON.stringify(data).slice(0, 800)}`);
+              const { data } = await axios.get(`/api/v2/wb-api/content/cards/limits?locale=${encodeURIComponent(contentLocale)}`);
+              setContentLimits(data);
             } catch (e: any) {
-              const msg = e?.response?.data?.error ?? e?.message ?? 'Не удалось получить лимиты';
-              alert(String(msg).slice(0, 800));
+              setContentLimits({ error: e?.response?.data?.error ?? e?.message });
+            } finally {
+              setContentLoading(false);
             }
           }}>Проверить лимиты</button>
           <button className="btn btn--secondary" onClick={async () => {
+            setContentLoading(true);
             try {
-              const { data } = await axios.post('/api/v2/wb-api/content/cards/trash');
+              const { data } = await axios.post(`/api/v2/wb-api/content/cards/trash?locale=${encodeURIComponent(contentLocale)}`);
               const total = data?.cursor?.total ?? 0;
-              alert(`Корзина: total=${total}`);
+              setContentTrashTotal(total);
             } catch (e: any) {
-              const msg = e?.response?.data?.error ?? e?.message ?? 'Не удалось получить корзину карточек';
-              alert(String(msg).slice(0, 800));
+              setContentTrashTotal(null);
+            } finally {
+              setContentLoading(false);
             }
           }}>Проверить корзину</button>
         </div>
       </div>
       <div className="table-wrapper">
+        {(contentCardsTotal != null || contentTrashTotal != null || contentLimits) && (
+          <div className="panel panel--sub" style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <span><strong>Контент total</strong>: {contentCardsTotal ?? '—'}</span>
+              {contentCardsCursor && (
+                <span><strong>Курсор</strong>: nmID={contentCardsCursor.nmID ?? '—'}, updatedAt={contentCardsCursor.updatedAt ?? '—'}</span>
+              )}
+              <span><strong>Корзина total</strong>: {contentTrashTotal ?? '—'}</span>
+              {contentLimits && (
+                <span><strong>Лимиты</strong>: {(() => {
+                  const d = (contentLimits as any)?.data ?? contentLimits;
+                  const fl = d?.freeLimits; const pl = d?.paidLimits;
+                  return fl != null || pl != null ? `free=${fl ?? '—'}, paid=${pl ?? '—'}` : JSON.stringify(contentLimits).slice(0, 120);
+                })()}</span>
+              )}
+              {contentLoading && <span>Загрузка…</span>}
+            </div>
+          </div>
+        )}
         <table>
           <thead>
             <tr>
