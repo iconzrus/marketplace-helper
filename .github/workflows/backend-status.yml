@@ -3,10 +3,6 @@ name: Backend Deployment Tracker
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'pom.xml'
-      - 'Dockerfile'
   workflow_dispatch: {}
 
 jobs:
