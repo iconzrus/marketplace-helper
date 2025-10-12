@@ -188,12 +188,25 @@ public class WbApiService {
         try {
             String url = "https://content-api.wildberries.ru/content/v2/get/cards/list";
 
+            // Content API ожидает структуру settings: { filter: {...}, cursor: {...}, sort?: {...} }
             Map<String, Object> cursor = new LinkedHashMap<>();
             cursor.put("limit", limit == null ? 1000 : limit);
-            if (offset != null) cursor.put("offset", offset);
+            // У Контент API курсор постраничный через nmID + updatedAt, offset не используется
+            cursor.put("nmID", 0);
+            cursor.put("updatedAt", "2000-01-01T00:00:00Z");
+
+            Map<String, Object> filter = new LinkedHashMap<>();
+            // -1: любые, 0: без фото, 1: с фото
+            filter.put("withPhoto", -1);
+
+            Map<String, Object> sort = new LinkedHashMap<>();
+            sort.put("sortColumn", "updateAt");
+            sort.put("ascending", false);
 
             Map<String, Object> settings = new LinkedHashMap<>();
+            settings.put("filter", filter);
             settings.put("cursor", cursor);
+            settings.put("sort", sort);
 
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("settings", settings);
@@ -208,6 +221,9 @@ public class WbApiService {
                     new ParameterizedTypeReference<Map<String, Object>>() {}
             );
             return response.getBody();
+        } catch (org.springframework.web.client.RestClientResponseException httpEx) {
+            String details = httpEx.getResponseBodyAsString();
+            throw new RuntimeException("Ошибка при получении карточек из Контент API: " + httpEx.getStatusCode() + ": " + details, httpEx);
         } catch (Exception e) {
             throw new RuntimeException("Ошибка при получении карточек из Контент API: " + e.getMessage(), e);
         }
