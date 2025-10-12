@@ -41,12 +41,12 @@ describe('Theme toggle', () => {
 
   it('switches to dark theme and persists preference', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/dashboard']}>
         <App />
       </MemoryRouter>
     );
 
-    // дождёмся появления переключателя
+    // дождёмся появления переключателя (он теперь в sidebar, поэтому нужна не Accounts страница)
     const checkbox = await screen.findByLabelText('Тёмная тема');
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
 
