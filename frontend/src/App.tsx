@@ -468,14 +468,28 @@ const App = () => {
     if (!authToken) {
       return;
     }
-    fetchAnalytics();
-    fetchWbProducts();
-    fetchWbStatuses();
-    fetchSellerInfo();
-    fetchMockMode();
-    fetchValidation();
-    fetchAlerts();
+    
+    const initData = async () => {
+      // First fetch mock mode status
+      await fetchMockMode();
+      
+      // Then fetch other data (seller info depends on mock mode)
+      fetchAnalytics();
+      fetchWbProducts();
+      fetchWbStatuses();
+      fetchValidation();
+      fetchAlerts();
+    };
+    
+    initData();
   }, [authToken]);
+
+  // Update seller info when mock mode changes
+  useEffect(() => {
+    if (authToken) {
+      fetchSellerInfo();
+    }
+  }, [mockMode, authToken]);
 
   useEffect(() => {
     if (!authToken) {
