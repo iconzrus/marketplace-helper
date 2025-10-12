@@ -1,0 +1,50 @@
+name: Backend Deployment Tracker
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - 'Dockerfile'
+  workflow_dispatch: {}
+
+jobs:
+  track-deployment:
+    runs-on: ubuntu-latest
+    environment:
+      name: koyeb-production
+      url: https://main-alvera-marketplace-helper-ef027238.koyeb.app
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Wait for Koyeb deployment
+        run: |
+          echo "⏳ Waiting for Koyeb to deploy..."
+          sleep 60
+      
+      - name: Check deployment health
+        run: |
+          echo "🔍 Checking Koyeb deployment..."
+          for i in {1..30}; do
+            if curl -f -s https://main-alvera-marketplace-helper-ef027238.koyeb.app/api/health > /dev/null; then
+              echo "✅ Backend is healthy!"
+              exit 0
+            fi
+            echo "Attempt $i/30 failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Backend health check failed"
+          exit 1
+      
+      - name: Report status
+        if: always()
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "✅ Deployment successful"
+          else
+            echo "❌ Deployment failed or not healthy"
+          fi
+
