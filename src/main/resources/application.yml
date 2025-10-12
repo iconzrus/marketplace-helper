@@ -34,7 +34,7 @@ logging:
 wb:
   api:
     token: ${WB_API_TOKEN:}  # Токен из переменной окружения
-    base-url: https://marketplace-api.wildberries.ru
+    base-url: https://content-api.wildberries.ru
     timeout: 30000  # 30 секунд
     mock-mode: true
     mock-data-path: classpath:mock/wb-products.json

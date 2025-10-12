@@ -34,7 +34,12 @@ public class DemoDataInitializer {
             seedProducts();
         }
         if (wbApiService != null) {
-            wbApiService.syncProductsFromWbApi();
+            try {
+                wbApiService.syncProductsFromWbApi();
+            } catch (Exception e) {
+                System.err.println("⚠️ Не удалось синхронизировать данные с WB API: " + e.getMessage());
+                System.err.println("Приложение продолжит работу с демо-данными");
+            }
         }
     }
 
