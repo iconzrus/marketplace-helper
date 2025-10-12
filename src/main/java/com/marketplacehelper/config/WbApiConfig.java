@@ -15,12 +15,15 @@ import java.util.List;
 @Configuration
 public class WbApiConfig {
     
-    @Value("${wb.api.token:}")
-    private String wbApiToken;
+    private final WbAuthTokenProvider tokenProvider;
     
     @Value("${wb.api.base-url:https://marketplace-api.wildberries.ru}")
     private String wbApiBaseUrl;
     
+    public WbApiConfig(WbAuthTokenProvider tokenProvider) {
+        this.tokenProvider = tokenProvider;
+    }
+
     @Bean
     public RestTemplate wbRestTemplate() {
         RestTemplate restTemplate = new RestTemplate();
@@ -30,7 +33,7 @@ public class WbApiConfig {
         if (CollectionUtils.isEmpty(interceptors)) {
             interceptors = new ArrayList<>();
         }
-        interceptors.add(new WbApiAuthInterceptor(wbApiToken));
+        interceptors.add(new WbApiAuthInterceptor(tokenProvider));
         restTemplate.setInterceptors(interceptors);
         
         return restTemplate;
@@ -40,17 +43,12 @@ public class WbApiConfig {
         return wbApiBaseUrl;
     }
     
-    public String getWbApiToken() {
-        return wbApiToken;
-    }
+    public String getWbApiToken() { return tokenProvider.getToken(); }
     
     // Интерцептор для добавления авторизации
     private static class WbApiAuthInterceptor implements ClientHttpRequestInterceptor {
-        private final String apiToken;
-        
-        public WbApiAuthInterceptor(String apiToken) {
-            this.apiToken = apiToken;
-        }
+        private final WbAuthTokenProvider tokenProvider;
+        public WbApiAuthInterceptor(WbAuthTokenProvider tokenProvider) { this.tokenProvider = tokenProvider; }
         
         @Override
         public org.springframework.http.client.ClientHttpResponse intercept(
@@ -58,7 +56,8 @@ public class WbApiConfig {
                 byte[] body,
                 ClientHttpRequestExecution execution) throws java.io.IOException {
             
-            if (apiToken != null && !apiToken.isEmpty()) {
+            String apiToken = tokenProvider.getToken();
+            if (apiToken != null && !apiToken.isBlank()) {
                 request.getHeaders().set("Authorization", "Bearer " + apiToken);
             }
             

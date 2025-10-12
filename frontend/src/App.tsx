@@ -857,7 +857,7 @@ const App = () => {
       </header>
 
       <nav className="nav">
-        <NavLink to="/" end>Dashboard</NavLink>
+        <NavLink to="/" end>Мои кабинеты</NavLink>
         <NavLink to="/wb">WB Каталог</NavLink>
         <NavLink to="/analytics">Аналитика</NavLink>
         <NavLink to="/prices">Прайс‑эдитор</NavLink>

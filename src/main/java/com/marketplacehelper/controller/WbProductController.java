@@ -5,6 +5,7 @@ import com.marketplacehelper.service.WbProductService;
 import com.marketplacehelper.service.WbApiService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.marketplacehelper.config.WbAuthTokenProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +22,13 @@ public class WbProductController {
     
     private final WbProductService wbProductService;
     private final WbApiService wbApiService;
+    private final WbAuthTokenProvider tokenProvider;
     
     @Autowired
-    public WbProductController(WbProductService wbProductService, WbApiService wbApiService) {
+    public WbProductController(WbProductService wbProductService, WbApiService wbApiService, WbAuthTokenProvider tokenProvider) {
         this.wbProductService = wbProductService;
         this.wbApiService = wbApiService;
+        this.tokenProvider = tokenProvider;
     }
     
     /**
@@ -240,6 +243,19 @@ public class WbProductController {
     public ResponseEntity<?> setMockMode(@RequestParam boolean enabled) {
         wbApiService.setMockMode(enabled);
         return ResponseEntity.ok(Map.of("mock", wbApiService.isMockMode()));
+    }
+
+    // API token management (runtime)
+    @GetMapping("/wb-api/token")
+    public ResponseEntity<?> getApiTokenState() {
+        String token = tokenProvider.getToken();
+        return ResponseEntity.ok(Map.of("hasToken", token != null && !token.isBlank()));
+    }
+
+    @PostMapping("/wb-api/token")
+    public ResponseEntity<?> setApiToken(@RequestParam String token) {
+        tokenProvider.setToken(token);
+        return ResponseEntity.ok(Map.of("hasToken", token != null && !token.isBlank()));
     }
     
     /**
