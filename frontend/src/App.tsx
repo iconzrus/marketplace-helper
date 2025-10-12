@@ -855,7 +855,7 @@ const App = () => {
         <NavLink to="/prices">Прайс‑эдитор</NavLink>
         <NavLink to="/corrections">Корректировки</NavLink>
         <NavLink to="/import">Импорт</NavLink>
-        <NavLink to="/demo">Демо‑центр</NavLink>
+        {mockMode && <NavLink to="/demo">Демо‑центр</NavLink>}
         <NavLink to="/wb-status">Стабильность WB</NavLink>
       </nav>
 
