@@ -2,7 +2,6 @@ package com.marketplacehelper.config;
 
 import com.marketplacehelper.model.Product;
 import com.marketplacehelper.repository.ProductRepository;
-import com.marketplacehelper.service.WbApiService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,14 +13,11 @@ import java.util.List;
 public class DemoDataInitializer {
 
     private final ProductRepository productRepository;
-    private final WbApiService wbApiService;
     private final boolean demoEnabled;
 
     public DemoDataInitializer(ProductRepository productRepository,
-                               WbApiService wbApiService,
                                @Value("${app.demo-data.enabled:true}") boolean demoEnabled) {
         this.productRepository = productRepository;
-        this.wbApiService = wbApiService;
         this.demoEnabled = demoEnabled;
     }
 
@@ -33,9 +29,8 @@ public class DemoDataInitializer {
         if (productRepository.count() == 0) {
             seedProducts();
         }
-        if (wbApiService != null) {
-            wbApiService.syncProductsFromWbApi();
-        }
+        // Убрана автоматическая синхронизация с WB API при старте
+        // Синхронизация теперь происходит только по запросу пользователя
     }
 
     private void seedProducts() {
