@@ -301,6 +301,13 @@ const App = () => {
   }, [theme]);
 
   useEffect(() => {
+    // Refresh mock mode when navigating to ensure nav is updated
+    if (authToken) {
+      fetchMockMode();
+    }
+  }, [location.pathname, authToken]);
+
+  useEffect(() => {
     const interceptor = axios.interceptors.response.use(
       response => response,
       error => {
