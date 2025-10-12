@@ -59,7 +59,7 @@ public class WbApiConfig {
                 ClientHttpRequestExecution execution) throws java.io.IOException {
             
             if (apiToken != null && !apiToken.isEmpty()) {
-                request.getHeaders().set("Authorization", apiToken);
+                request.getHeaders().set("Authorization", "Bearer " + apiToken);
             }
             
             return execution.execute(request, body);
