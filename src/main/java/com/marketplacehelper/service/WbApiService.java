@@ -92,16 +92,18 @@ public class WbApiService {
         }
 
         try {
-            StringBuilder urlBuilder = new StringBuilder(wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/filter");
+            StringBuilder urlBuilder = new StringBuilder(wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/filter?");
+            String limit = filters != null && filters.get("limit") != null ? filters.get("limit") : "1000";
+            String offset = filters != null && filters.get("offset") != null ? filters.get("offset") : "0";
+            urlBuilder.append("limit=").append(limit).append("&offset=").append(offset);
+
             if (filters != null && !filters.isEmpty()) {
-                urlBuilder.append("?");
-                boolean first = true;
                 for (Map.Entry<String, String> entry : filters.entrySet()) {
-                    if (!first) {
-                        urlBuilder.append("&");
+                    String key = entry.getKey();
+                    if ("limit".equalsIgnoreCase(key) || "offset".equalsIgnoreCase(key)) {
+                        continue;
                     }
-                    urlBuilder.append(entry.getKey()).append("=").append(entry.getValue());
-                    first = false;
+                    urlBuilder.append("&").append(key).append("=").append(entry.getValue());
                 }
             }
             ResponseEntity<Map<String, Object>> response = wbRestTemplate.exchange(
