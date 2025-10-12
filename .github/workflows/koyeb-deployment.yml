@@ -1,0 +1,20 @@
+name: Backend Deployment Status
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  koyeb-deployment:
+    runs-on: ubuntu-latest
+    environment:
+      name: koyeb-production
+      url: https://main-alvera-marketplace-helper-ef027238.koyeb.app
+    steps:
+      - name: Deployment notification
+        run: |
+          echo "🚀 Backend deployed to Koyeb"
+          echo "🔗 URL: https://main-alvera-marketplace-helper-ef027238.koyeb.app"
+          echo "✅ Deployment tracked successfully"
+

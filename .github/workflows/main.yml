@@ -19,6 +19,9 @@ concurrency:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: https://iconzrus.github.io/marketplace-helper/
     permissions:
       contents: read
       pages: write
