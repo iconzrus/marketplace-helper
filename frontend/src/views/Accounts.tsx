@@ -96,55 +96,93 @@ export default function Accounts() {
   };
 
   return (
-    <section className="panel">
-      <div className="panel__title">
-        <h2>Мои кабинеты</h2>
-        <p>Выберите кабинет для работы</p>
+    <div>
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">Выберите кабинет для работы</h2>
+        <p className="text-secondary text-sm">Подключите реальный WB API токен или используйте тестовый кабинет для разработки</p>
       </div>
-      {error && <div className="message message--error">{error}</div>}
-      <div className="cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginTop: 16 }}>
-        <div className="card" style={{ padding: 24, border: '1px solid var(--border-color)', borderRadius: 8 }}>
-          <h3 style={{ marginTop: 0 }}>Реальный кабинет</h3>
-          {!hasToken ? (
-            <div>
-              <input 
-                placeholder="Введите WB API Token" 
-                value={tokenInput} 
-                onChange={e => setTokenInput(e.target.value)} 
-                style={{ width: '100%', marginBottom: 12 }} 
-              />
-              <button className="btn" onClick={saveToken} disabled={loading || !tokenInput}>
-                {loading ? 'Сохранение...' : 'Сохранить токен'}
-              </button>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <span style={{ color: 'green', fontSize: 24 }}>✓</span>
-                <span style={{ fontWeight: 600 }}>Токен введён</span>
+      
+      {error && <div className="message message--error mb-4">{error}</div>}
+      
+      <div className="grid grid-cols-2">
+        {/* Real Cabinet Card */}
+        <div className="card">
+          <div className="card__header">
+            <div className="flex items-center gap-3">
+              <div style={{ fontSize: '2rem' }}>🏢</div>
+              <div>
+                <h3 className="card__title">Реальный кабинет</h3>
+                <p className="card__description">Подключение к WB API</p>
               </div>
-              <div style={{ marginBottom: 16, padding: 12, background: 'var(--bg-secondary)', borderRadius: 4 }}>
-                <div><strong>Продавец:</strong> {seller?.company || seller?.supplierName || seller?.name || '—'}</div>
-                {(seller?.inn || seller?.INN) && <div><strong>ИНН:</strong> {seller.inn || seller.INN}</div>}
-              </div>
-              <button className="btn btn--primary" onClick={enterRealCabinet} disabled={loading}>
-                Войти в кабинет
-              </button>
             </div>
-          )}
+          </div>
+          
+          <div className="card__content">
+            {!hasToken ? (
+              <div>
+                <label className="text-sm font-medium text-secondary mb-2" style={{ display: 'block' }}>
+                  WB API Token
+                </label>
+                <input 
+                  type="password"
+                  placeholder="Введите токен из личного кабинета WB" 
+                  value={tokenInput} 
+                  onChange={e => setTokenInput(e.target.value)}
+                  className="mb-4"
+                />
+                <button className="btn btn--primary" onClick={saveToken} disabled={loading || !tokenInput}>
+                  {loading ? 'Сохранение...' : 'Сохранить и подключить'}
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <span style={{ color: 'var(--success-solid)', fontSize: '1.5rem' }}>✓</span>
+                  <span className="font-semibold text-success">Токен подключён</span>
+                </div>
+                <div className="mb-4 p-3" style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <div className="text-sm mb-1">
+                    <span className="text-tertiary">Продавец:</span>{' '}
+                    <span className="font-medium">{seller?.company || seller?.supplierName || seller?.name || '—'}</span>
+                  </div>
+                  {(seller?.inn || seller?.INN) && (
+                    <div className="text-sm">
+                      <span className="text-tertiary">ИНН:</span>{' '}
+                      <span className="font-medium">{seller.inn || seller.INN}</span>
+                    </div>
+                  )}
+                </div>
+                <button className="btn btn--primary" onClick={enterRealCabinet} disabled={loading}>
+                  Войти в кабинет →
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="card" style={{ padding: 24, border: '1px solid var(--border-color)', borderRadius: 8 }}>
-          <h3 style={{ marginTop: 0 }}>Mock кабинет</h3>
-          <p style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>
-            Для разработки и тестирования без реального API. 
-            Можно сгенерировать 100–300 товаров с случайными данными.
-          </p>
-          <button className="btn" onClick={enterMockCabinet} disabled={loading}>
-            {loading ? 'Загрузка...' : 'Войти в Mock кабинет'}
-          </button>
+
+        {/* Mock Cabinet Card */}
+        <div className="card">
+          <div className="card__header">
+            <div className="flex items-center gap-3">
+              <div style={{ fontSize: '2rem' }}>🧪</div>
+              <div>
+                <h3 className="card__title">Тестовый кабинет</h3>
+                <p className="card__description">Для разработки и демо</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="card__content">
+            <p className="text-sm text-secondary mb-4">
+              Работа без реального API. Можно сгенерировать 100–300 товаров с случайными данными для тестирования функционала.
+            </p>
+            <button className="btn btn--secondary" onClick={enterMockCabinet} disabled={loading}>
+              {loading ? 'Загрузка...' : 'Войти в тестовый кабинет →'}
+            </button>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
