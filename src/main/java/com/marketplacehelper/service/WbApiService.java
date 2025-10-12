@@ -57,13 +57,24 @@ public class WbApiService {
 
         try {
             String url = wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/filter?limit=1000&offset=0";
-            ResponseEntity<List<Map<String, Object>>> response = wbRestTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = wbRestTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     null,
-                    new ParameterizedTypeReference<List<Map<String, Object>>>() {}
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
             );
-            return response.getBody();
+
+            Map<String, Object> body = response.getBody();
+            if (body == null) {
+                return Collections.emptyList();
+            }
+            Object data = body.get("data");
+            if (data instanceof List<?> list) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
+                return casted;
+            }
+            return Collections.emptyList();
         } catch (Exception e) {
             throw new RuntimeException("Ошибка при получении товаров из WB API: " + e.getMessage(), e);
         }
@@ -93,13 +104,23 @@ public class WbApiService {
                     first = false;
                 }
             }
-            ResponseEntity<List<Map<String, Object>>> response = wbRestTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = wbRestTemplate.exchange(
                     urlBuilder.toString(),
                     HttpMethod.GET,
                     null,
-                    new ParameterizedTypeReference<List<Map<String, Object>>>() {}
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
             );
-            return response.getBody();
+            Map<String, Object> body = response.getBody();
+            if (body == null) {
+                return Collections.emptyList();
+            }
+            Object data = body.get("data");
+            if (data instanceof List<?> list) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
+                return casted;
+            }
+            return Collections.emptyList();
         } catch (Exception e) {
             throw new RuntimeException("Ошибка при получении товаров из WB API с фильтрацией: " + e.getMessage(), e);
         }
