@@ -484,10 +484,13 @@ const App = () => {
     initData();
   }, [authToken]);
 
-  // Update seller info when mock mode changes
+  // Update seller info when mock mode changes (only fetch if mock is OFF)
   useEffect(() => {
-    if (authToken) {
+    if (authToken && !mockMode) {
       fetchSellerInfo();
+    } else if (mockMode) {
+      // Clear seller info when entering mock mode
+      setSellerInfo(null);
     }
   }, [mockMode, authToken]);
 
