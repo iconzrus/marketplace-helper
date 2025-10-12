@@ -248,8 +248,8 @@ public class WbProductController {
     // API token management (runtime)
     @GetMapping("/wb-api/token")
     public ResponseEntity<?> getApiTokenState() {
-        String token = tokenProvider.getToken();
-        return ResponseEntity.ok(Map.of("hasToken", token != null && !token.isBlank()));
+        // Only return true if token was explicitly set via API, not from env
+        return ResponseEntity.ok(Map.of("hasToken", tokenProvider.hasTokenSetViaApi()));
     }
 
     @PostMapping("/wb-api/token")
