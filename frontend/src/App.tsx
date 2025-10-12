@@ -158,6 +158,7 @@ export type AppOutletContext = {
 
   // Demo
   demoMode: boolean; setDemoMode: (v: boolean) => void;
+  mockMode: boolean; // Added mockMode to context
   runDemoAutofill: () => Promise<void>;
   generateMockCabinet: () => Promise<void>;
   genCount: string; setGenCount: (v: string) => void;
@@ -1029,7 +1030,7 @@ const App = () => {
           // Import
           handleFileUpload,
           // Demo
-          demoMode, setDemoMode, runDemoAutofill, generateMockCabinet, genCount, setGenCount, genType, setGenType, delCount, setDelCount, delAll, setDelAll, runDemoGenerate, runDemoDelete,
+          demoMode, setDemoMode, mockMode, runDemoAutofill, generateMockCabinet, genCount, setGenCount, genType, setGenType, delCount, setDelCount, delAll, setDelAll, runDemoGenerate, runDemoDelete,
           // helpers
           currency, percent, numberFormat, sourceBadge,
           __openWhatIf: openWhatIf,

@@ -50,12 +50,16 @@ public class WbProductController {
             @RequestParam(required = false, defaultValue = "false") Boolean useLocalData) {
         
         try {
-            if (useLocalData) {
+            // В Mock режиме ВСЕГДА используем локальные данные из БД (игнорируем useLocalData)
+            // В реальном режиме: useLocalData=true -> БД, useLocalData=false -> WB API
+            boolean useMock = wbApiService.isMockMode();
+            
+            if (useMock || useLocalData) {
                 // Используем локальные данные из базы
                 List<WbProduct> products = getLocalProducts(name, vendor, brand, category, subject, minPrice, maxPrice, minDiscount, lowStockThreshold);
                 return ResponseEntity.ok(products);
             } else {
-                // Получаем данные напрямую из WB API
+                // Получаем данные напрямую из WB API (только в реальном режиме)
                 Map<String, String> filters = new HashMap<>();
                 if (name != null) filters.put("name", name);
                 if (vendor != null) filters.put("vendor", vendor);

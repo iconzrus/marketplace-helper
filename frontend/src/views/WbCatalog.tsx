@@ -38,9 +38,11 @@ export default function WbCatalog() {
         </div>
         <div className="card__content">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center' }}>
-          <label className="toggle">
-            <input type="checkbox" checked={ctx.useLocalData} onChange={e => ctx.setUseLocalData(e.target.checked)} /> Использовать локальные данные
-          </label>
+          {!ctx.mockMode && (
+            <label className="toggle">
+              <input type="checkbox" checked={ctx.useLocalData} onChange={e => ctx.setUseLocalData(e.target.checked)} /> Использовать локальные данные
+            </label>
+          )}
           <input placeholder="Поиск по названию" value={ctx.query} onChange={e => ctx.setQuery(e.target.value)} />
           <input placeholder="Бренд" value={ctx.brand} onChange={e => ctx.setBrand(e.target.value)} />
           <input placeholder="Категория" value={ctx.category} onChange={e => ctx.setCategory(e.target.value)} />
