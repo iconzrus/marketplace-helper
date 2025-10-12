@@ -30,10 +30,14 @@ export default function WbCatalog() {
     load();
   }, [targetMargin]);
   return (
-    <section className="panel">
-      <div className="panel__title">
-        <h2>WB Каталог</h2>
-        <div className="toolbar">
+    <div style={{ maxWidth: '100%' }}>
+      {/* Filters Card */}
+      <div className="card mb-6">
+        <div className="card__header">
+          <h3 className="card__title">Фильтры и поиск</h3>
+        </div>
+        <div className="card__content">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center' }}>
           <label className="toggle">
             <input type="checkbox" checked={ctx.useLocalData} onChange={e => ctx.setUseLocalData(e.target.checked)} /> Использовать локальные данные
           </label>
@@ -43,9 +47,11 @@ export default function WbCatalog() {
           <input placeholder="Мин. цена" inputMode="decimal" value={ctx.minPrice} onChange={e => ctx.setMinPrice(e.target.value)} style={{ width: 100 }} />
           <input placeholder="Макс. цена" inputMode="decimal" value={ctx.maxPrice} onChange={e => ctx.setMaxPrice(e.target.value)} style={{ width: 110 }} />
           <input placeholder="Мин. скидка, %" inputMode="numeric" value={ctx.minDiscount} onChange={e => ctx.setMinDiscount(e.target.value)} style={{ width: 130 }} />
-          <button className="btn btn--secondary" onClick={ctx.fetchWbProducts} disabled={ctx.loadingWb}>{ctx.loadingWb ? 'Обновление…' : 'Обновить товары'}</button>
-          <button className="btn" onClick={ctx.handleSyncWb}>Синхронизировать с WB</button>
-          <button className="btn" onClick={async () => {
+          <button className="btn btn--primary" onClick={ctx.fetchWbProducts} disabled={ctx.loadingWb}>{ctx.loadingWb ? 'Обновление…' : 'Обновить товары'}</button>
+          <button className="btn btn--secondary" onClick={ctx.handleSyncWb}>Синхронизировать с WB</button>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+          <button className="btn btn--secondary" onClick={async () => {
             setContentLoading(true);
             try {
               const { data } = await axios.post(`/api/v2/wb-api/content/cards?locale=${encodeURIComponent(contentLocale)}`);
@@ -82,28 +88,53 @@ export default function WbCatalog() {
               setContentLoading(false);
             }
           }}>Проверить корзину</button>
+          </div>
         </div>
       </div>
-      <div className="table-wrapper">
-        {(contentCardsTotal != null || contentTrashTotal != null || contentLimits) && (
-          <div className="panel panel--sub" style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'baseline', flexWrap: 'wrap' }}>
-              <span><strong>Контент total</strong>: {contentCardsTotal ?? '—'}</span>
-              {contentCardsCursor && (
-                <span><strong>Курсор</strong>: nmID={contentCardsCursor.nmID ?? '—'}, updatedAt={contentCardsCursor.updatedAt ?? '—'}</span>
+
+      {/* Content API Stats */}
+      {(contentCardsTotal != null || contentTrashTotal != null || contentLimits) && (
+        <div className="card mb-6">
+          <div className="card__content">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
+              {contentCardsTotal != null && (
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-1)' }}>Активных карточек</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>{contentCardsTotal}</div>
+                  {contentCardsCursor && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: 'var(--space-1)' }}>
+                      nmID: {contentCardsCursor.nmID ?? '—'}
+                    </div>
+                  )}
+                </div>
               )}
-              <span><strong>Корзина total</strong>: {contentTrashTotal ?? '—'}</span>
+              {contentTrashTotal != null && (
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-1)' }}>В корзине</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>{contentTrashTotal}</div>
+                </div>
+              )}
               {contentLimits && (
-                <span><strong>Лимиты</strong>: {(() => {
-                  const d = (contentLimits as any)?.data ?? contentLimits;
-                  const fl = d?.freeLimits; const pl = d?.paidLimits;
-                  return fl != null || pl != null ? `free=${fl ?? '—'}, paid=${pl ?? '—'}` : JSON.stringify(contentLimits).slice(0, 120);
-                })()}</span>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-1)' }}>Лимиты</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 500 }}>
+                    {(() => {
+                      const d = (contentLimits as any)?.data ?? contentLimits;
+                      const fl = d?.freeLimits; const pl = d?.paidLimits;
+                      return fl != null || pl != null ? `${fl ?? '—'} / ${pl ?? '—'}` : '—';
+                    })()}
+                  </div>
+                </div>
               )}
-              {contentLoading && <span>Загрузка…</span>}
             </div>
+            {contentLoading && <div style={{ marginTop: 'var(--space-3)', color: 'var(--text-secondary)' }}>Загрузка…</div>}
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Products Table */}
+      <div className="card">
+        <div className="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -122,9 +153,11 @@ export default function WbCatalog() {
           </thead>
           <tbody>
             {ctx.loadingWb ? (
-              <tr><td colSpan={11}>Загрузка…</td></tr>
+              <tr><td colSpan={11} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-secondary)' }}>Загрузка…</td></tr>
             ) : ctx.wbProducts.length === 0 ? (
-              <tr><td colSpan={11}>Нет данных. Попробуйте импортировать или синхронизировать товары.</td></tr>
+              <tr><td colSpan={11} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-secondary)' }}>
+                Нет данных. Попробуйте импортировать или синхронизировать товары.
+              </td></tr>
             ) : (
               ctx.pagedProducts.map(product => (
                 <tr key={`${product.nmId ?? product.id ?? product.vendorCode}`}>
@@ -144,17 +177,20 @@ export default function WbCatalog() {
             )}
           </tbody>
         </table>
+        </div>
         {!ctx.loadingWb && ctx.wbProducts.length > 0 && (
-          <div className="pagination">
-            <span className="page-info">Стр. {ctx.page} из {ctx.totalPages}</span>
-            <button onClick={() => ctx.setPage(1)} disabled={ctx.page === 1}>⏮</button>
-            <button onClick={() => ctx.setPage(p => Math.max(1, (typeof p === 'number'? p : 1) - 1))} disabled={ctx.page === 1}>Назад</button>
-            <button onClick={() => ctx.setPage(p => Math.min(ctx.totalPages, (typeof p === 'number'? p : 1) + 1))} disabled={ctx.page === ctx.totalPages}>Вперёд</button>
-            <button onClick={() => ctx.setPage(ctx.totalPages)} disabled={ctx.page === ctx.totalPages}>⏭</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)' }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Стр. {ctx.page} из {ctx.totalPages}</span>
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <button className="btn btn--secondary btn--sm" onClick={() => ctx.setPage(1)} disabled={ctx.page === 1}>⏮ Первая</button>
+              <button className="btn btn--secondary btn--sm" onClick={() => ctx.setPage(p => Math.max(1, (typeof p === 'number'? p : 1) - 1))} disabled={ctx.page === 1}>← Назад</button>
+              <button className="btn btn--secondary btn--sm" onClick={() => ctx.setPage(p => Math.min(ctx.totalPages, (typeof p === 'number'? p : 1) + 1))} disabled={ctx.page === ctx.totalPages}>Вперёд →</button>
+              <button className="btn btn--secondary btn--sm" onClick={() => ctx.setPage(ctx.totalPages)} disabled={ctx.page === ctx.totalPages}>Последняя ⏭</button>
+            </div>
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }
 
