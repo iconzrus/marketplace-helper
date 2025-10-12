@@ -158,10 +158,13 @@ public class WbApiService {
 
     public Map<String, Object> getSellerInfo() {
         if (shouldUseMock()) {
-            // Generate seller info once and cache it
+            // Only return seller info if it was explicitly generated
             if (mockSellerCompany == null || mockSellerInn == null) {
-                mockSellerCompany = randomCompany();
-                mockSellerInn = String.valueOf(7700000000L + new java.util.Random().nextInt(99999999));
+                // Return empty mock response - no seller generated yet
+                Map<String, Object> response = new LinkedHashMap<>();
+                response.put("mock", true);
+                response.put("message", "Сгенерируйте кабинет для создания продавца");
+                return response;
             }
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("company", mockSellerCompany);

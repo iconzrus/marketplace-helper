@@ -832,19 +832,21 @@ const App = () => {
         <div className="app__header-content">
           <h1>Marketplace Helper</h1>
           <p>Рабочее место менеджера по маркетплейсам.</p>
-          {!isAccountsPage && sellerInfo && (
-            <div className="seller-badge">
-              <span className="badge">
-                {(() => {
-                  const name = sellerInfo?.company || (sellerInfo as any)?.supplierName || (sellerInfo as any)?.name;
-                  const inn = (sellerInfo as any)?.inn || (sellerInfo as any)?.INN || (sellerInfo as any)?.taxpayerId;
-                  const isMock = (sellerInfo as any)?.mock || mockMode;
-                  const suffix = isMock ? ' (Тестовый)' : '';
-                  return name ? `${name}${inn ? ` (ИНН ${inn})` : ''}${suffix}` : (isMock ? 'Тестовый кабинет' : 'WB: продавец не определён');
-                })()}
-              </span>
-            </div>
-          )}
+          {!isAccountsPage && sellerInfo && (() => {
+            const name = sellerInfo?.company || (sellerInfo as any)?.supplierName || (sellerInfo as any)?.name;
+            const inn = (sellerInfo as any)?.inn || (sellerInfo as any)?.INN || (sellerInfo as any)?.taxpayerId;
+            const isMock = (sellerInfo as any)?.mock || mockMode;
+            // Don't show badge if no company name (mock mode without generated seller)
+            if (!name && isMock) return null;
+            const suffix = isMock ? ' (Тестовый)' : '';
+            return (
+              <div className="seller-badge">
+                <span className="badge">
+                  {name ? `${name}${inn ? ` (ИНН ${inn})` : ''}${suffix}` : (isMock ? 'Тестовый кабинет' : 'WB: продавец не определён')}
+                </span>
+              </div>
+            );
+          })()}
         </div>
         <div className="auth-status">
           <label className="toggle">
