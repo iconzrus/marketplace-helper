@@ -596,7 +596,7 @@ const App = () => {
   };
 
   const runDemoAutofill = async () => {
-    // Автозаполнение расходов для существующих товаров
+    // Автозаполнение расходов для существующих товаров + создание Product для WbProduct
     if (!authToken) return;
     setDemoActionLoading(true);
     setMessage(null);
@@ -608,7 +608,17 @@ const App = () => {
       });
       await fetchAnalytics();
       await fetchValidation();
-      setMessage(`Автозаполнены расходы для ${data?.affectedCount ?? 0} товаров.`);
+      const created = data?.createdCount ?? 0;
+      const filled = data?.affectedCount ?? 0;
+      if (created > 0 && filled > 0) {
+        setMessage(`Создано ${created} товаров, автозаполнены расходы для ${filled} товаров.`);
+      } else if (created > 0) {
+        setMessage(`Создано ${created} товаров с расходами.`);
+      } else if (filled > 0) {
+        setMessage(`Автозаполнены расходы для ${filled} товаров.`);
+      } else {
+        setMessage('Все товары уже заполнены.');
+      }
     } catch (err) {
       console.error(err);
       if (axios.isAxiosError(err) && err.response?.status === 401) return;

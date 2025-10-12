@@ -30,42 +30,78 @@ public class DemoDataService {
 
     @Transactional
     public AutoFillResultDto autoFillMissingCosts(AutoFillRequestDto request) {
-        List<Product> products = productRepository.findAll();
+        // Step 1: Create Product entries for WbProducts that don't have matching Products
+        List<WbProduct> wbProducts = wbProductRepository.findAll();
+        List<Product> existingProducts = productRepository.findAll();
+        int created = 0;
+        
+        for (WbProduct wb : wbProducts) {
+            if (wb.getNmId() == null) continue;
+            
+            // Check if Product already exists for this WbProduct
+            String wbArticle = String.valueOf(wb.getNmId());
+            boolean exists = existingProducts.stream()
+                    .anyMatch(p -> p.getWbArticle() != null && p.getWbArticle().equals(wbArticle));
+            
+            if (!exists) {
+                // Create new Product from WbProduct
+                Product newProduct = new Product();
+                newProduct.setWbArticle(wbArticle);
+                newProduct.setName(wb.getName());
+                newProduct.setBrand(wb.getBrand());
+                newProduct.setCategory(wb.getCategory());
+                newProduct.setPrice(wb.getPrice() != null ? wb.getPrice() : BigDecimal.ZERO);
+                newProduct.setStockQuantity(wb.getTotalQuantity() != null ? wb.getTotalQuantity() : 0);
+                productRepository.save(newProduct);
+                existingProducts.add(newProduct);
+                created++;
+            }
+        }
+        
+        // Step 2: Auto-fill costs for all Products (existing + newly created)
         int affected = 0;
         AutoFillResultDto result = new AutoFillResultDto();
         int limit = request.getLimit() != null && request.getLimit() > 0 ? request.getLimit() : Integer.MAX_VALUE;
 
-        for (Product product : products) {
+        for (Product product : existingProducts) {
             List<String> updatedFields = new ArrayList<>();
 
             BigDecimal basePrice = product.getPrice();
-            if (basePrice == null) {
+            if (basePrice == null || basePrice.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
 
-            // purchase
-            if ((!request.isOnlyIfMissing() || product.getPurchasePrice() == null) && request.getPurchasePercentOfPrice() != null) {
-                BigDecimal purchase = percentageOf(basePrice, request.getPurchasePercentOfPrice());
+            // purchase (default 55% of price)
+            BigDecimal purchasePercent = request.getPurchasePercentOfPrice() != null ? 
+                    request.getPurchasePercentOfPrice() : new BigDecimal("55");
+            if ((!request.isOnlyIfMissing() || product.getPurchasePrice() == null)) {
+                BigDecimal purchase = percentageOf(basePrice, purchasePercent);
                 product.setPurchasePrice(purchase);
                 updatedFields.add("purchasePrice");
             }
 
-            // logistics
-            if ((!request.isOnlyIfMissing() || product.getLogisticsCost() == null) && request.getLogisticsFixed() != null) {
-                product.setLogisticsCost(request.getLogisticsFixed());
+            // logistics (default 300 RUB)
+            BigDecimal logisticsDefault = request.getLogisticsFixed() != null ? 
+                    request.getLogisticsFixed() : new BigDecimal("300");
+            if ((!request.isOnlyIfMissing() || product.getLogisticsCost() == null)) {
+                product.setLogisticsCost(logisticsDefault);
                 updatedFields.add("logisticsCost");
             }
 
-            // marketing
-            if ((!request.isOnlyIfMissing() || product.getMarketingCost() == null) && request.getMarketingPercentOfPrice() != null) {
-                BigDecimal marketing = percentageOf(basePrice, request.getMarketingPercentOfPrice());
+            // marketing (default 8% of price)
+            BigDecimal marketingPercent = request.getMarketingPercentOfPrice() != null ? 
+                    request.getMarketingPercentOfPrice() : new BigDecimal("8");
+            if ((!request.isOnlyIfMissing() || product.getMarketingCost() == null)) {
+                BigDecimal marketing = percentageOf(basePrice, marketingPercent);
                 product.setMarketingCost(marketing);
                 updatedFields.add("marketingCost");
             }
 
-            // other
-            if ((!request.isOnlyIfMissing() || product.getOtherExpenses() == null) && request.getOtherFixed() != null) {
-                product.setOtherExpenses(request.getOtherFixed());
+            // other (default 200 RUB)
+            BigDecimal otherDefault = request.getOtherFixed() != null ? 
+                    request.getOtherFixed() : new BigDecimal("200");
+            if ((!request.isOnlyIfMissing() || product.getOtherExpenses() == null)) {
+                product.setOtherExpenses(otherDefault);
                 updatedFields.add("otherExpenses");
             }
 
@@ -83,6 +119,7 @@ public class DemoDataService {
         }
 
         result.setAffectedCount(affected);
+        result.setCreatedCount(created);
         return result;
     }
 

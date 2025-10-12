@@ -47,6 +47,7 @@ public class AutoFillResultDto {
     }
 
     private int affectedCount;
+    private int createdCount;
     private List<AffectedItem> items;
 
     public int getAffectedCount() {
@@ -55,6 +56,14 @@ public class AutoFillResultDto {
 
     public void setAffectedCount(int affectedCount) {
         this.affectedCount = affectedCount;
+    }
+
+    public int getCreatedCount() {
+        return createdCount;
+    }
+
+    public void setCreatedCount(int createdCount) {
+        this.createdCount = createdCount;
     }
 
     public List<AffectedItem> getItems() {
