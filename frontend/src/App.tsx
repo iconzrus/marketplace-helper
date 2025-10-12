@@ -159,6 +159,7 @@ export type AppOutletContext = {
   // Demo
   demoMode: boolean; setDemoMode: (v: boolean) => void;
   runDemoAutofill: () => Promise<void>;
+  generateMockCabinet: () => Promise<void>;
   genCount: string; setGenCount: (v: string) => void;
   genType: 'both'|'excel'|'wb'; setGenType: (v: 'both'|'excel'|'wb') => void;
   delCount: string; setDelCount: (v: string) => void;
@@ -570,16 +571,23 @@ const App = () => {
     setError(null);
     try {
       await axios.post('/api/demo/fill-random-all');
+      await fetchWbProducts();
+      await fetchSellerInfo();
       await fetchAnalytics();
       await fetchValidation();
-      setMessage('Демо‑заполнение: товары объединены и данные сгенерированы.');
+      setMessage('Сгенерирован mock‑кабинет: 100–300 товаров и продавец.');
     } catch (err) {
       console.error(err);
       if (axios.isAxiosError(err) && err.response?.status === 401) return;
-      setError('Не удалось выполнить демо‑заполнение.');
+      setError('Не удалось сгенерировать mock‑кабинет.');
     } finally {
       setDemoActionLoading(false);
     }
+  };
+
+  const generateMockCabinet = async () => {
+    // отдельная явная кнопка может использовать этот метод
+    return runDemoAutofill();
   };
 
   const runDemoGenerate = async () => {

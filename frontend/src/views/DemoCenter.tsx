@@ -12,6 +12,7 @@ export default function DemoCenter() {
           <label className="chip">
             <input type="checkbox" checked={ctx.demoMode} onChange={e => ctx.setDemoMode(e.target.checked)} /> Demo Mode
           </label>
+          <button className="btn" onClick={ctx.generateMockCabinet} disabled={!ctx.demoMode}>Сгенерировать кабинет (100–300)</button>
           <div className="presets">
             <button className="btn btn--secondary" onClick={() => ctx.setMinMarginPercent(10)}>Пресет: Минимум</button>
             <button className="btn" onClick={ctx.runDemoAutofill} disabled={!ctx.demoMode}>Автозаполнить расходы</button>
