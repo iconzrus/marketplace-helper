@@ -200,7 +200,7 @@ public class WbApiService {
             filter.put("withPhoto", -1);
 
             Map<String, Object> sort = new LinkedHashMap<>();
-            sort.put("sortColumn", "updateAt");
+            sort.put("sortColumn", "updatedAt");
             sort.put("ascending", false);
 
             Map<String, Object> settings = new LinkedHashMap<>();
