@@ -49,6 +49,25 @@ export default function WbCatalog() {
               alert(String(msg).slice(0, 800));
             }
           }}>Проверить карточки (Контент)</button>
+          <button className="btn btn--secondary" onClick={async () => {
+            try {
+              const { data } = await axios.get('/api/v2/wb-api/content/cards/limits');
+              alert(`Лимиты: ${JSON.stringify(data).slice(0, 800)}`);
+            } catch (e: any) {
+              const msg = e?.response?.data?.error ?? e?.message ?? 'Не удалось получить лимиты';
+              alert(String(msg).slice(0, 800));
+            }
+          }}>Проверить лимиты</button>
+          <button className="btn btn--secondary" onClick={async () => {
+            try {
+              const { data } = await axios.post('/api/v2/wb-api/content/cards/trash');
+              const total = data?.cursor?.total ?? 0;
+              alert(`Корзина: total=${total}`);
+            } catch (e: any) {
+              const msg = e?.response?.data?.error ?? e?.message ?? 'Не удалось получить корзину карточек';
+              alert(String(msg).slice(0, 800));
+            }
+          }}>Проверить корзину</button>
         </div>
       </div>
       <div className="table-wrapper">

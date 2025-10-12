@@ -276,6 +276,32 @@ public class WbProductController {
         }
     }
 
+    @PostMapping("/wb-api/content/cards/trash")
+    public ResponseEntity<?> getContentCardsTrash(@RequestParam(required = false) Integer limit,
+                                                  @RequestParam(required = false) Integer withPhoto,
+                                                  @RequestParam(required = false) Long nmId,
+                                                  @RequestParam(required = false) String updatedAt,
+                                                  @RequestParam(required = false) String locale) {
+        try {
+            Map<String, Object> result = wbApiService.getContentCardsTrash(limit, withPhoto, nmId, updatedAt, locale);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Ошибка при получении карточек (trash): " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/wb-api/content/cards/limits")
+    public ResponseEntity<?> getContentCardsLimits(@RequestParam(required = false) String locale) {
+        try {
+            Map<String, Object> result = wbApiService.getContentCardsLimits(locale);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Ошибка при получении лимитов: " + e.getMessage()));
+        }
+    }
+
     /**
      * Получить цены по списку nmID-ов (через POST /api/v2/list/goods/filter)
      */

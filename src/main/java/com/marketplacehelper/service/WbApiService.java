@@ -241,6 +241,92 @@ public class WbApiService {
         }
     }
 
+    public Map<String, Object> getContentCardsTrash(Integer limit,
+                                                    Integer withPhoto,
+                                                    Long nmId,
+                                                    String updatedAt,
+                                                    String locale) {
+        if (shouldUseMock()) {
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("mock", true);
+            response.put("message", "Контент API (trash) не вызывается в mock-режиме");
+            response.put("cards", List.of());
+            response.put("cursor", Map.of("nmID", 0, "total", 0));
+            return response;
+        }
+
+        try {
+            StringBuilder url = new StringBuilder("https://content-api.wildberries.ru/content/v2/get/cards/trash");
+            if (locale != null && !locale.isBlank()) {
+                url.append("?locale=").append(locale);
+            }
+
+            Map<String, Object> cursor = new LinkedHashMap<>();
+            cursor.put("limit", limit == null ? 100 : limit);
+            if (nmId != null) {
+                cursor.put("nmID", nmId);
+            }
+            if (updatedAt != null && !updatedAt.isBlank()) {
+                cursor.put("updatedAt", updatedAt);
+            }
+
+            Map<String, Object> filter = new LinkedHashMap<>();
+            if (withPhoto != null) {
+                filter.put("withPhoto", withPhoto);
+            }
+
+            Map<String, Object> settings = new LinkedHashMap<>();
+            settings.put("filter", filter);
+            settings.put("cursor", cursor);
+
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("settings", settings);
+
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("Content-Type", "application/json");
+            headers.set("Accept", "application/json");
+            org.springframework.http.HttpEntity<Map<String, Object>> entity =
+                    new org.springframework.http.HttpEntity<>(body, headers);
+
+            ResponseEntity<Map<String, Object>> response = wbRestTemplate.exchange(
+                    url.toString(),
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            return response.getBody();
+        } catch (org.springframework.web.client.RestClientResponseException httpEx) {
+            String details = httpEx.getResponseBodyAsString();
+            throw new RuntimeException("Ошибка при получении карточек (trash) из Контент API: " + httpEx.getStatusCode() + ": " + details, httpEx);
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка при получении карточек (trash) из Контент API: " + e.getMessage(), e);
+        }
+    }
+
+    public Map<String, Object> getContentCardsLimits(String locale) {
+        if (shouldUseMock()) {
+            return Map.of("mock", true, "limits", Map.of());
+        }
+        try {
+            StringBuilder url = new StringBuilder("https://content-api.wildberries.ru/content/v2/cards/limits");
+            if (locale != null && !locale.isBlank()) {
+                url.append("?locale=").append(locale);
+            }
+            ResponseEntity<Map<String, Object>> response = wbRestTemplate.exchange(
+                    url.toString(),
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            return response.getBody();
+        } catch (org.springframework.web.client.RestClientResponseException httpEx) {
+            String details = httpEx.getResponseBodyAsString();
+            throw new RuntimeException("Ошибка при получении лимитов Контент API: " + httpEx.getStatusCode() + ": " + details, httpEx);
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка при получении лимитов Контент API: " + e.getMessage(), e);
+        }
+    }
+
     public List<Map<String, Object>> getPricesByNmIds(List<Long> nmIds) {
         if (shouldUseMock()) {
             return loadMockProducts();
