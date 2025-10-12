@@ -409,10 +409,14 @@ const App = () => {
       setWbProducts(data);
     } catch (err) {
       console.error(err);
-      if (axios.isAxiosError(err) && err.response?.status === 401) {
+      // Don't show error for 401 (unauthorized) or if it's just initial load
+      if (axios.isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 500)) {
         return;
       }
-      setError('Не удалось получить товары Wildberries.');
+      // Only show error if user is actively trying to fetch products (not initial load)
+      if (query || brand || category || minPrice || maxPrice || minDiscount) {
+        setError('Не удалось получить товары Wildberries.');
+      }
     } finally {
       setLoadingWb(false);
     }
@@ -843,7 +847,7 @@ const App = () => {
           </p>
         </div>
         
-        <div className="card" style={{ maxWidth: '420px', width: '100%' }}>
+        <div className="card" style={{ maxWidth: '480px', width: '100%' }}>
           <div className="card__header">
             <h2 className="card__title">Вход в систему</h2>
             <p className="card__description">Укажите логин и пароль для доступа к кабинету</p>
@@ -861,7 +865,8 @@ const App = () => {
                 onChange={event => setLogin(event.target.value)} 
                 autoComplete="username" 
                 placeholder="Введите логин" 
-                required 
+                required
+                style={{ width: '100%' }}
               />
             </div>
             
@@ -875,11 +880,12 @@ const App = () => {
                 onChange={event => setPassword(event.target.value)} 
                 autoComplete="current-password" 
                 placeholder="Введите пароль" 
-                required 
+                required
+                style={{ width: '100%' }}
               />
             </div>
             
-            <button type="submit" className="btn btn--primary btn--lg" disabled={authLoading} style={{ marginTop: 'var(--space-2)' }}>
+            <button type="submit" className="btn btn--primary btn--lg" disabled={authLoading} style={{ marginTop: 'var(--space-2)', width: '100%' }}>
               {authLoading ? 'Вход…' : 'Войти'}
             </button>
           </form>
