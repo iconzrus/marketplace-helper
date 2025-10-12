@@ -335,6 +335,8 @@ const App = () => {
       setLogin('');
       setPassword('');
       setError(null);
+      // Redirect to accounts page after login
+      window.location.hash = '#/accounts';
     } catch (err) {
       console.error(err);
       if (axios.isAxiosError(err) && err.response?.status === 401) {
@@ -815,36 +817,27 @@ const App = () => {
     );
   }
 
+  const isAccountsPage = location.pathname === '/' || location.pathname === '/accounts';
+
   return (
     <div className="app">
       <header className="app__header">
         <div className="app__header-content">
           <h1>Marketplace Helper</h1>
           <p>Рабочее место менеджера по маркетплейсам.</p>
-          <div className="seller-badge">
-            <span className="badge">
-              {(() => {
-                const name = sellerInfo?.company || (sellerInfo as any)?.supplierName || (sellerInfo as any)?.name;
-                const inn = (sellerInfo as any)?.inn || (sellerInfo as any)?.INN || (sellerInfo as any)?.taxpayerId;
-                return name ? `WB: ${name}${inn ? ` (ИНН ${inn})` : ''}` : 'WB: продавец не определён';
-              })()}
-            </span>
-          </div>
+          {!isAccountsPage && sellerInfo && (
+            <div className="seller-badge">
+              <span className="badge">
+                {(() => {
+                  const name = sellerInfo?.company || (sellerInfo as any)?.supplierName || (sellerInfo as any)?.name;
+                  const inn = (sellerInfo as any)?.inn || (sellerInfo as any)?.INN || (sellerInfo as any)?.taxpayerId;
+                  return name ? `WB: ${name}${inn ? ` (ИНН ${inn})` : ''}` : 'WB: продавец не определён';
+                })()}
+              </span>
+            </div>
+          )}
         </div>
         <div className="auth-status">
-          <label className="toggle">
-            <input type="checkbox" checked={mockMode} onChange={async e => {
-              try {
-                const enabled = e.target.checked;
-                await axios.post(`/api/v2/wb-api/mock-mode?enabled=${String(enabled)}`);
-                setMockMode(enabled);
-                // при смене режима заново загрузим данные
-                await fetchWbProducts();
-                await fetchSellerInfo();
-              } catch (_) {}
-            }} />
-            Mock режим
-          </label>
           <label className="toggle">
             <input type="checkbox" checked={theme === 'dark'} onChange={e => setTheme(e.target.checked ? 'dark' : 'light')} />
             Тёмная тема
@@ -856,16 +849,19 @@ const App = () => {
         </div>
       </header>
 
-      <nav className="nav">
-        <NavLink to="/" end>Мои кабинеты</NavLink>
-        <NavLink to="/wb">WB Каталог</NavLink>
-        <NavLink to="/analytics">Аналитика</NavLink>
-        <NavLink to="/prices">Прайс‑эдитор</NavLink>
-        <NavLink to="/corrections">Корректировки</NavLink>
-        <NavLink to="/import">Импорт</NavLink>
-        {mockMode && <NavLink to="/demo">Демо‑центр</NavLink>}
-        <NavLink to="/wb-status">Стабильность WB</NavLink>
-      </nav>
+      {!isAccountsPage && (
+        <nav className="nav">
+          <NavLink to="/accounts">Мои кабинеты</NavLink>
+          <NavLink to="/dashboard">Dashboard</NavLink>
+          <NavLink to="/wb">WB Каталог</NavLink>
+          <NavLink to="/analytics">Аналитика</NavLink>
+          <NavLink to="/prices">Прайс‑эдитор</NavLink>
+          <NavLink to="/corrections">Корректировки</NavLink>
+          <NavLink to="/import">Импорт</NavLink>
+          {mockMode && <NavLink to="/demo">Демо‑центр</NavLink>}
+          <NavLink to="/wb-status">Стабильность WB</NavLink>
+        </nav>
+      )}
 
       {error && <div className="message message--error">{error}</div>}
       {message && <div className="message message--success">{message}</div>}
@@ -882,7 +878,7 @@ const App = () => {
           // Import
           handleFileUpload,
           // Demo
-          demoMode, setDemoMode, runDemoAutofill, genCount, setGenCount, genType, setGenType, delCount, setDelCount, delAll, setDelAll, runDemoGenerate, runDemoDelete,
+          demoMode, setDemoMode, runDemoAutofill, generateMockCabinet, genCount, setGenCount, genType, setGenType, delCount, setDelCount, delAll, setDelAll, runDemoGenerate, runDemoDelete,
           // helpers
           currency, percent, numberFormat, sourceBadge,
           __openWhatIf: openWhatIf,

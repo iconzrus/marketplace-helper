@@ -18,6 +18,8 @@ export const router = createHashRouter([
     element: <App />,
     children: [
       { index: true, element: <Accounts /> },
+      { path: 'accounts', element: <Accounts /> },
+      { path: 'dashboard', element: <Dashboard /> },
       { path: 'wb', element: <WbCatalog /> },
       { path: 'analytics', element: <Analytics /> },
       { path: 'prices', element: <PriceEditor /> },
