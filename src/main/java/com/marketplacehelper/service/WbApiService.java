@@ -201,6 +201,53 @@ public class WbApiService {
         }
     }
 
+    public Map<String, Object> syncProductsFromWbApiWithStats() {
+        try {
+            List<Map<String, Object>> wbProducts = getGoodsWithPrices();
+            int fetched = wbProducts == null ? 0 : wbProducts.size();
+            int inserted = 0;
+            int updated = 0;
+            int skipped = 0;
+
+            if (wbProducts != null) {
+                for (Map<String, Object> productData : wbProducts) {
+                    WbProduct product = convertToWbProduct(productData);
+
+                    Optional<WbProduct> existing = Optional.empty();
+                    if (product.getNmId() != null) {
+                        existing = wbProductRepository.findByNmId(product.getNmId());
+                    }
+                    if (existing.isEmpty() && product.getVendorCode() != null) {
+                        existing = wbProductRepository.findByVendorCode(product.getVendorCode());
+                    }
+
+                    if (existing.isPresent()) {
+                        WbProduct existingProduct = existing.get();
+                        updateWbProductFromData(existingProduct, productData);
+                        wbProductRepository.save(existingProduct);
+                        updated++;
+                    } else if (product.getNmId() != null || product.getVendorCode() != null) {
+                        wbProductRepository.save(product);
+                        inserted++;
+                    } else {
+                        skipped++;
+                    }
+                }
+            }
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("fetched", fetched);
+            result.put("inserted", inserted);
+            result.put("updated", updated);
+            result.put("upserted", inserted + updated);
+            result.put("skipped", skipped);
+            result.put("message", fetched == 0 ? "WB вернул 0 товаров" : "Синхронизация завершена");
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка при синхронизации товаров: " + e.getMessage(), e);
+        }
+    }
+
     private boolean shouldUseMock() {
         String token = wbApiConfig.getWbApiToken();
         return mockMode || token == null || token.isBlank();

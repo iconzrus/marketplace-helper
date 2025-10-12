@@ -234,8 +234,8 @@ public class WbProductController {
     @PostMapping("/wb-api/sync")
     public ResponseEntity<?> syncProductsFromWbApi() {
         try {
-            wbApiService.syncProductsFromWbApi();
-            return ResponseEntity.ok(Map.of("message", "Синхронизация товаров завершена успешно"));
+            Map<String, Object> stats = wbApiService.syncProductsFromWbApiWithStats();
+            return ResponseEntity.ok(stats);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Ошибка при синхронизации товаров: " + e.getMessage()));
