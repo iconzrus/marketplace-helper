@@ -43,6 +43,7 @@ public class WbProductController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Integer minDiscount,
             @RequestParam(required = false) Integer lowStockThreshold,
+            @RequestParam(required = false) Long filterNmID,
             @RequestParam(required = false, defaultValue = "false") Boolean useLocalData) {
         
         try {
@@ -62,6 +63,7 @@ public class WbProductController {
                 if (maxPrice != null) filters.put("maxPrice", maxPrice.toString());
                 if (minDiscount != null) filters.put("minDiscount", minDiscount.toString());
                 if (lowStockThreshold != null) filters.put("lowStockThreshold", lowStockThreshold.toString());
+                if (filterNmID != null) filters.put("filterNmID", filterNmID.toString());
                 
                 List<Map<String, Object>> wbProducts = wbApiService.getGoodsWithPricesFiltered(filters);
                 return ResponseEntity.ok(wbProducts);
