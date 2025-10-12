@@ -825,60 +825,130 @@ const App = () => {
   }
 
   const isAccountsPage = location.pathname === '/' || location.pathname === '/accounts';
+  
+  // Get current page title
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/' || path === '/accounts') return 'Мои кабинеты';
+    if (path === '/dashboard') return 'Dashboard';
+    if (path === '/wb') return 'WB Каталог';
+    if (path === '/analytics') return 'Аналитика';
+    if (path === '/prices') return 'Прайс-редактор';
+    if (path === '/corrections') return 'Корректировки';
+    if (path === '/import') return 'Импорт данных';
+    if (path === '/demo') return 'Демо-центр';
+    if (path === '/wb-status') return 'Стабильность WB API';
+    return 'Marketplace Helper';
+  };
 
   return (
     <div className="app">
-      <header className="app__header">
-        <div className="app__header-content">
-          <h1>Marketplace Helper</h1>
-          <p>Рабочее место менеджера по маркетплейсам.</p>
-          {!isAccountsPage && sellerInfo && (() => {
-            const name = sellerInfo?.company || (sellerInfo as any)?.supplierName || (sellerInfo as any)?.name;
-            const inn = (sellerInfo as any)?.inn || (sellerInfo as any)?.INN || (sellerInfo as any)?.taxpayerId;
-            const isMock = (sellerInfo as any)?.mock || mockMode;
-            // Don't show badge if no company name (mock mode without generated seller)
-            if (!name && isMock) return null;
-            const suffix = isMock ? ' (Тестовый)' : '';
-            return (
-              <div className="seller-badge">
-                <span className="badge">
-                  {name ? `${name}${inn ? ` (ИНН ${inn})` : ''}${suffix}` : (isMock ? 'Тестовый кабинет' : 'WB: продавец не определён')}
-                </span>
-              </div>
-            );
-          })()}
-        </div>
-        <div className="auth-status">
-          <label className="toggle">
-            <input type="checkbox" checked={theme === 'dark'} onChange={e => setTheme(e.target.checked ? 'dark' : 'light')} />
-            Тёмная тема
-          </label>
-          <span>
-            Вошли как <span className="auth-status__user">{authUser ?? 'пользователь'}</span>
-          </span>
-          <button className="btn btn--secondary" onClick={() => handleLogout()}>Выйти</button>
-        </div>
-      </header>
-
+      {/* Sidebar Navigation */}
       {!isAccountsPage && (
-        <nav className="nav">
-          <NavLink to="/accounts">Мои кабинеты</NavLink>
-          <NavLink to="/dashboard">Dashboard</NavLink>
-          <NavLink to="/wb">WB Каталог</NavLink>
-          <NavLink to="/analytics">Аналитика</NavLink>
-          <NavLink to="/prices">Прайс‑эдитор</NavLink>
-          <NavLink to="/corrections">Корректировки</NavLink>
-          <NavLink to="/import">Импорт</NavLink>
-          {mockMode && <NavLink to="/demo">Демо‑центр</NavLink>}
-          <NavLink to="/wb-status">Стабильность WB</NavLink>
-        </nav>
+        <aside className="sidebar">
+          <div className="sidebar__header">
+            <NavLink to="/accounts" className="sidebar__logo">
+              <div className="sidebar__logo-icon">M</div>
+              <span>Marketplace Helper</span>
+            </NavLink>
+          </div>
+          
+          <nav className="sidebar__nav">
+            <div className="sidebar__section">
+              <div className="sidebar__section-title">Главное</div>
+              <NavLink to="/dashboard" className="sidebar__link">
+                <span className="sidebar__link-icon">📊</span>
+                <span>Dashboard</span>
+              </NavLink>
+              <NavLink to="/wb" className="sidebar__link">
+                <span className="sidebar__link-icon">📦</span>
+                <span>WB Каталог</span>
+              </NavLink>
+              <NavLink to="/analytics" className="sidebar__link">
+                <span className="sidebar__link-icon">📈</span>
+                <span>Аналитика</span>
+              </NavLink>
+            </div>
+            
+            <div className="sidebar__section">
+              <div className="sidebar__section-title">Управление</div>
+              <NavLink to="/prices" className="sidebar__link">
+                <span className="sidebar__link-icon">💰</span>
+                <span>Прайс-редактор</span>
+              </NavLink>
+              <NavLink to="/corrections" className="sidebar__link">
+                <span className="sidebar__link-icon">✏️</span>
+                <span>Корректировки</span>
+              </NavLink>
+              <NavLink to="/import" className="sidebar__link">
+                <span className="sidebar__link-icon">📥</span>
+                <span>Импорт</span>
+              </NavLink>
+            </div>
+            
+            <div className="sidebar__section">
+              <div className="sidebar__section-title">Система</div>
+              {mockMode && (
+                <NavLink to="/demo" className="sidebar__link">
+                  <span className="sidebar__link-icon">🧪</span>
+                  <span>Демо-центр</span>
+                </NavLink>
+              )}
+              <NavLink to="/wb-status" className="sidebar__link">
+                <span className="sidebar__link-icon">🔌</span>
+                <span>Стабильность WB</span>
+              </NavLink>
+              <NavLink to="/accounts" className="sidebar__link">
+                <span className="sidebar__link-icon">⚙️</span>
+                <span>Кабинеты</span>
+              </NavLink>
+            </div>
+          </nav>
+          
+          <div className="sidebar__footer">
+            <div className="flex flex-col gap-2">
+              <label className="toggle">
+                <input type="checkbox" checked={theme === 'dark'} onChange={e => setTheme(e.target.checked ? 'dark' : 'light')} />
+                <span className="text-sm">Тёмная тема</span>
+              </label>
+            </div>
+          </div>
+        </aside>
       )}
 
-      {error && <div className="message message--error">{error}</div>}
-      {message && <div className="message message--success">{message}</div>}
+      {/* Main Content Area */}
+      <main className="main">
+        {/* Top Header */}
+        <header className="main__header">
+          <div className="main__header-left">
+            <div>
+              <h1 className="main__title">{getPageTitle()}</h1>
+              {sellerInfo && (() => {
+                const name = sellerInfo?.company || (sellerInfo as any)?.supplierName || (sellerInfo as any)?.name;
+                const inn = (sellerInfo as any)?.inn || (sellerInfo as any)?.INN || (sellerInfo as any)?.taxpayerId;
+                const isMock = (sellerInfo as any)?.mock || mockMode;
+                if (!name && isMock) return null;
+                const suffix = isMock ? ' (Тестовый)' : '';
+                return (
+                  <p className="main__subtitle">
+                    {name ? `${name}${inn ? ` · ИНН ${inn}` : ''}${suffix}` : (isMock ? 'Тестовый кабинет' : '')}
+                  </p>
+                );
+              })()}
+            </div>
+          </div>
+          <div className="main__header-right">
+            <span className="text-sm text-secondary">{authUser}</span>
+            <button className="btn btn--ghost btn--sm" onClick={() => handleLogout()}>Выйти</button>
+          </div>
+        </header>
 
-      <div className="route-outlet">
-        <Outlet context={{
+        {/* Content Area */}
+        <div className="main__content">
+          {error && <div className="message message--error">{error}</div>}
+          {message && <div className="message message--success">{message}</div>}
+          
+          <Outlet context={{
           authToken,
           // WB
           wbProducts, loadingWb, useLocalData, setUseLocalData, query, setQuery, brand, setBrand, category, setCategory, minPrice, setMinPrice, maxPrice, setMaxPrice, minDiscount, setMinDiscount, page, setPage, totalPages, pagedProducts, fetchWbProducts, handleSyncWb, fetchAnalytics,
@@ -896,7 +966,8 @@ const App = () => {
           alerts,
           fetchAlerts
         } as AppOutletContext} />
-      </div>
+        </div>
+      </main>
 
       {whatIfOpen.open && whatIfOpen.item && (
         <div className="modal-backdrop" onClick={() => setWhatIfOpen({ open: false })}>
