@@ -574,7 +574,7 @@ const App = () => {
   };
 
   const runDemoAutofill = async () => {
-    if (!authToken || !demoMode) return;
+    if (!authToken) return;
     setDemoActionLoading(true);
     setMessage(null);
     setError(null);
@@ -832,13 +832,15 @@ const App = () => {
         <div className="app__header-content">
           <h1>Marketplace Helper</h1>
           <p>Рабочее место менеджера по маркетплейсам.</p>
-          {!isAccountsPage && !mockMode && sellerInfo && (
+          {!isAccountsPage && sellerInfo && (
             <div className="seller-badge">
               <span className="badge">
                 {(() => {
                   const name = sellerInfo?.company || (sellerInfo as any)?.supplierName || (sellerInfo as any)?.name;
                   const inn = (sellerInfo as any)?.inn || (sellerInfo as any)?.INN || (sellerInfo as any)?.taxpayerId;
-                  return name ? `WB: ${name}${inn ? ` (ИНН ${inn})` : ''}` : 'WB: продавец не определён';
+                  const isMock = (sellerInfo as any)?.mock || mockMode;
+                  const suffix = isMock ? ' (Тестовый)' : '';
+                  return name ? `${name}${inn ? ` (ИНН ${inn})` : ''}${suffix}` : (isMock ? 'Тестовый кабинет' : 'WB: продавец не определён');
                 })()}
               </span>
             </div>

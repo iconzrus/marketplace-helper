@@ -34,6 +34,8 @@ public class WbApiService {
 
     private List<Map<String, Object>> cachedMockProducts;
     private volatile boolean runtimeMockMode;
+    private volatile String mockSellerCompany = null;
+    private volatile String mockSellerInn = null;
 
     public WbApiService(RestTemplate wbRestTemplate,
                         WbApiConfig wbApiConfig,
@@ -156,9 +158,14 @@ public class WbApiService {
 
     public Map<String, Object> getSellerInfo() {
         if (shouldUseMock()) {
+            // Generate seller info once and cache it
+            if (mockSellerCompany == null || mockSellerInn == null) {
+                mockSellerCompany = randomCompany();
+                mockSellerInn = String.valueOf(7700000000L + new java.util.Random().nextInt(99999999));
+            }
             Map<String, Object> response = new LinkedHashMap<>();
-            response.put("company", randomCompany());
-            response.put("inn", String.valueOf(7700000000L + new java.util.Random().nextInt(99999999)));
+            response.put("company", mockSellerCompany);
+            response.put("inn", mockSellerInn);
             response.put("mock", true);
             response.put("updatedAt", Instant.now().toString());
             return response;
@@ -176,6 +183,11 @@ public class WbApiService {
         } catch (Exception e) {
             throw new RuntimeException("Ошибка при получении информации о продавце: " + e.getMessage(), e);
         }
+    }
+    
+    public void regenerateMockSeller() {
+        mockSellerCompany = randomCompany();
+        mockSellerInn = String.valueOf(7700000000L + new java.util.Random().nextInt(99999999));
     }
 
     private String randomCompany() {

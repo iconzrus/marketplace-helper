@@ -20,10 +20,12 @@ public class DemoDataService {
 
     private final ProductRepository productRepository;
     private final WbProductRepository wbProductRepository;
+    private final WbApiService wbApiService;
 
-    public DemoDataService(ProductRepository productRepository, WbProductRepository wbProductRepository) {
+    public DemoDataService(ProductRepository productRepository, WbProductRepository wbProductRepository, WbApiService wbApiService) {
         this.productRepository = productRepository;
         this.wbProductRepository = wbProductRepository;
+        this.wbApiService = wbApiService;
     }
 
     @Transactional
@@ -92,6 +94,7 @@ public class DemoDataService {
     public int fillRandomAll() {
         // Generate a fresh mock "cabinet" of WB products (100-300)
         wbProductRepository.deleteAll();
+        wbApiService.regenerateMockSeller(); // Generate new seller info
         int total = 100 + new java.util.Random().nextInt(201);
         List<WbProduct> batch = new java.util.ArrayList<>(total);
         for (int i = 0; i < total; i++) {
