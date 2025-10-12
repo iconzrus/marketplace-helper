@@ -88,6 +88,14 @@ interface AuthSuccessResponse {
   token: string;
   username: string;
 }
+type SellerInfo = {
+  company?: string;
+  inn?: string | number;
+  name?: string;
+  supplierName?: string;
+  supplierId?: string | number;
+  [key: string]: unknown;
+};
 
 const currency = (value?: number) =>
   value != null ? value.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' }) : '—';
@@ -191,6 +199,7 @@ const App = () => {
   const [page, setPage] = useState(1);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<string | null>(null);
+  const [sellerInfo, setSellerInfo] = useState<SellerInfo | null>(null);
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -224,6 +233,15 @@ const App = () => {
       setWbStatuses(null);
     } finally {
       setWbStatusLoading(false);
+    }
+  };
+  const fetchSellerInfo = async () => {
+    if (!authToken) return;
+    try {
+      const { data } = await axios.get<SellerInfo>('/api/v2/wb-api/seller-info');
+      setSellerInfo(data ?? null);
+    } catch (_) {
+      setSellerInfo(null);
     }
   };
 
@@ -406,8 +424,15 @@ const App = () => {
     setError(null);
     setMessage(null);
     try {
-      await axios.post('/api/v2/wb-api/sync');
-      setMessage('Синхронизация с WB выполнена.');
+      const { data } = await axios.post('/api/v2/wb-api/sync');
+      if (data && typeof data === 'object') {
+        const fetched = (data as any).fetched ?? 0;
+        const inserted = (data as any).inserted ?? 0;
+        const updated = (data as any).updated ?? 0;
+        setMessage(`WB: получено ${fetched}, добавлено ${inserted}, обновлено ${updated}.`);
+      } else {
+        setMessage('Синхронизация с WB выполнена.');
+      }
       await fetchWbProducts();
     } catch (err) {
       console.error(err);
@@ -427,6 +452,7 @@ const App = () => {
     fetchAnalytics();
     fetchWbProducts();
     fetchWbStatuses();
+    fetchSellerInfo();
     fetchValidation();
     fetchAlerts();
   }, [authToken]);
@@ -777,6 +803,15 @@ const App = () => {
         <div className="app__header-content">
           <h1>Marketplace Helper</h1>
           <p>Рабочее место менеджера по маркетплейсам.</p>
+          <div className="seller-badge">
+            <span className="badge">
+              {(() => {
+                const name = sellerInfo?.company || (sellerInfo as any)?.supplierName || (sellerInfo as any)?.name;
+                const inn = (sellerInfo as any)?.inn || (sellerInfo as any)?.INN || (sellerInfo as any)?.taxpayerId;
+                return name ? `WB: ${name}${inn ? ` (ИНН ${inn})` : ''}` : 'WB: продавец не определён';
+              })()}
+            </span>
+          </div>
         </div>
         <div className="auth-status">
           <label className="toggle">
