@@ -157,8 +157,8 @@ public class WbApiService {
     public Map<String, Object> getSellerInfo() {
         if (shouldUseMock()) {
             Map<String, Object> response = new LinkedHashMap<>();
-            response.put("company", "Demo Seller LLC");
-            response.put("inn", "0000000000");
+            response.put("company", randomCompany());
+            response.put("inn", String.valueOf(7700000000L + new java.util.Random().nextInt(99999999)));
             response.put("mock", true);
             response.put("updatedAt", Instant.now().toString());
             return response;
@@ -176,6 +176,19 @@ public class WbApiService {
         } catch (Exception e) {
             throw new RuntimeException("Ошибка при получении информации о продавце: " + e.getMessage(), e);
         }
+    }
+
+    private String randomCompany() {
+        String[] forms = {"ИП", "ООО", "АО"};
+        String[] names = {"Север", "Вектор", "Атлант", "Прометей", "Сфера", "Гермес"};
+        java.util.Random r = new java.util.Random();
+        String form = forms[r.nextInt(forms.length)];
+        String name = names[r.nextInt(names.length)];
+        String surname = new String[]{"Смирнов", "Иванов", "Петров", "Соколов", "Кузнецов"}[r.nextInt(5)];
+        if ("ИП".equals(form)) {
+            return form + " " + surname + " " + name.charAt(0) + ". ";
+        }
+        return form + " \"" + name + "\"";
     }
 
     public Map<String, Object> getContentCardsList(Integer limit,

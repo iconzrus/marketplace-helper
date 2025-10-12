@@ -1,5 +1,107 @@
 package com.marketplacehelper.service;
 
+import com.marketplacehelper.model.WbProduct;
+import com.marketplacehelper.repository.WbProductRepository;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+@Service
+public class DemoDataService {
+    private final WbProductRepository wbProductRepository;
+    private final Random random = new Random();
+
+    public DemoDataService(WbProductRepository wbProductRepository) {
+        this.wbProductRepository = wbProductRepository;
+    }
+
+    public int fillRandomAll() {
+        wbProductRepository.deleteAll();
+        int count = 100 + random.nextInt(201); // 100..300
+        List<WbProduct> batch = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            batch.add(generateWbProduct(i));
+        }
+        wbProductRepository.saveAll(batch);
+        return count;
+    }
+
+    public int generateDemo(int count, String type) {
+        int created = 0;
+        for (int i = 0; i < count; i++) {
+            wbProductRepository.save(generateWbProduct(i));
+            created++;
+        }
+        return created;
+    }
+
+    public com.marketplacehelper.dto.DeleteResultDto deleteRandom(int count, boolean all) {
+        if (all) {
+            int size = (int) wbProductRepository.count();
+            wbProductRepository.deleteAll();
+            return new com.marketplacehelper.dto.DeleteResultDto(size, 0);
+        }
+        // simple delete first N
+        List<WbProduct> allItems = wbProductRepository.findAll();
+        int removed = Math.min(allItems.size(), Math.max(0, count));
+        wbProductRepository.deleteAll(allItems.subList(0, removed));
+        return new com.marketplacehelper.dto.DeleteResultDto(removed, allItems.size() - removed);
+    }
+
+    private WbProduct generateWbProduct(int index) {
+        long nmId = 100000 + random.nextInt(1_000_000);
+        String[] brands = {"Winter Garden", "FISHING BAND", "Helios", "NordHike", "Pulse"};
+        String brand = brands[random.nextInt(brands.length)];
+        String[] categories = {"Электроника", "Рыбалка", "Спорт", "Дом и дача", "Бытовая техника"};
+        String category = categories[random.nextInt(categories.length)];
+        String[] subjects = {"Смартфоны", "Кормушки рыболовные", "Кроссовки", "Умные часы", "Термокружки"};
+        String subject = subjects[random.nextInt(subjects.length)];
+        String vendor = brand;
+        String vendorCode = brand.substring(0, Math.min(3, brand.length())).toUpperCase() + "-" + (1000 + random.nextInt(9000));
+
+        BigDecimal price = BigDecimal.valueOf(500 + random.nextInt(20000));
+        int discount = random.nextInt(35);
+        BigDecimal priceWithDiscount = price.multiply(BigDecimal.valueOf(100 - discount)).divide(BigDecimal.valueOf(100));
+        BigDecimal salePrice = priceWithDiscount;
+        BigDecimal basicPriceU = price;
+        int basicSale = Math.max(0, discount - 5);
+        int totalQuantity = 10 + random.nextInt(200);
+        int notInOrders = Math.max(0, totalQuantity - random.nextInt(totalQuantity));
+        int quantityFull = totalQuantity + random.nextInt(60);
+        int inWayTo = random.nextInt(12);
+        int inWayFrom = random.nextInt(4);
+
+        WbProduct p = new WbProduct();
+        p.setNmId(nmId);
+        p.setName(subject + " " + vendorCode);
+        p.setVendor(vendor);
+        p.setVendorCode(vendorCode);
+        p.setBrand(brand);
+        p.setCategory(category);
+        p.setSubject(subject);
+        p.setPrice(price);
+        p.setDiscount(discount);
+        p.setPriceWithDiscount(priceWithDiscount);
+        p.setSalePrice(salePrice);
+        p.setBasicPriceU(basicPriceU);
+        p.setBasicSale(basicSale);
+        p.setTotalQuantity(totalQuantity);
+        p.setQuantityNotInOrders(notInOrders);
+        p.setQuantityFull(quantityFull);
+        p.setInWayToClient(inWayTo);
+        p.setInWayFromClient(inWayFrom);
+        p.setCreatedAt(LocalDateTime.now());
+        p.setUpdatedAt(LocalDateTime.now());
+        return p;
+    }
+}
+
+package com.marketplacehelper.service;
+
 import com.marketplacehelper.dto.AutoFillRequestDto;
 import com.marketplacehelper.dto.AutoFillResultDto;
 import com.marketplacehelper.model.Product;
