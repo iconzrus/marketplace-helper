@@ -263,9 +263,12 @@ public class WbProductController {
      */
     @PostMapping("/wb-api/content/cards")
     public ResponseEntity<?> getContentCards(@RequestParam(required = false) Integer limit,
-                                             @RequestParam(required = false) Integer offset) {
+                                             @RequestParam(required = false) Integer withPhoto,
+                                             @RequestParam(required = false) Long nmId,
+                                             @RequestParam(required = false) String updatedAt,
+                                             @RequestParam(required = false) String locale) {
         try {
-            Map<String, Object> result = wbApiService.getContentCardsList(limit, offset);
+            Map<String, Object> result = wbApiService.getContentCardsList(limit, withPhoto, nmId, updatedAt, locale);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

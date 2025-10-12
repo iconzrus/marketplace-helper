@@ -176,7 +176,11 @@ public class WbApiService {
         }
     }
 
-    public Map<String, Object> getContentCardsList(Integer limit, Integer offset) {
+    public Map<String, Object> getContentCardsList(Integer limit,
+                                                   Integer withPhoto,
+                                                   Long nmId,
+                                                   String updatedAt,
+                                                   String locale) {
         if (shouldUseMock()) {
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("mock", true);
@@ -186,36 +190,44 @@ public class WbApiService {
         }
 
         try {
-            String url = "https://content-api.wildberries.ru/content/v2/get/cards/list";
+            StringBuilder url = new StringBuilder("https://content-api.wildberries.ru/content/v2/get/cards/list");
+            if (locale != null && !locale.isBlank()) {
+                url.append("?locale=").append(locale);
+            }
 
             // Content API ожидает структуру settings: { filter: {...}, cursor: {...}, sort?: {...} }
             Map<String, Object> cursor = new LinkedHashMap<>();
-            cursor.put("limit", limit == null ? 1000 : limit);
-            // У Контент API курсор постраничный через nmID + updatedAt, offset не используется
-            cursor.put("nmID", 0);
-            cursor.put("updatedAt", "2000-01-01T00:00:00Z");
+            cursor.put("limit", limit == null ? 100 : limit);
+            if (nmId != null) {
+                cursor.put("nmID", nmId);
+            }
+            if (updatedAt != null && !updatedAt.isBlank()) {
+                cursor.put("updatedAt", updatedAt);
+            }
 
             Map<String, Object> filter = new LinkedHashMap<>();
-            // -1: любые, 0: без фото, 1: с фото
-            filter.put("withPhoto", -1);
+            if (withPhoto != null) {
+                // -1: любые, 0: без фото, 1: с фото
+                filter.put("withPhoto", withPhoto);
+            }
 
-            Map<String, Object> sort = new LinkedHashMap<>();
-            sort.put("sortColumn", "updatedAt");
-            sort.put("ascending", false);
+            // сортировка опциональна, опускаем для совместимости
 
             Map<String, Object> settings = new LinkedHashMap<>();
             settings.put("filter", filter);
             settings.put("cursor", cursor);
-            settings.put("sort", sort);
 
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("settings", settings);
 
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("Content-Type", "application/json");
+            headers.set("Accept", "application/json");
             org.springframework.http.HttpEntity<Map<String, Object>> entity =
-                    new org.springframework.http.HttpEntity<>(body);
+                    new org.springframework.http.HttpEntity<>(body, headers);
 
             ResponseEntity<Map<String, Object>> response = wbRestTemplate.exchange(
-                    url,
+                    url.toString(),
                     HttpMethod.POST,
                     entity,
                     new ParameterizedTypeReference<Map<String, Object>>() {}

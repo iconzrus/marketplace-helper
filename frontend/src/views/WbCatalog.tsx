@@ -42,10 +42,11 @@ export default function WbCatalog() {
           <button className="btn" onClick={async () => {
             try {
               const { data } = await axios.post('/api/v2/wb-api/content/cards');
-              const total = Array.isArray((data as any)?.data) ? (data as any).data.length : ((data as any)?.cards?.length ?? 0);
-              alert(`Контент: получено ${total} карточек (первые ${Math.min(total, 1000)} в ответе).`);
-            } catch (e) {
-              alert('Не удалось получить карточки из Контента');
+              const total = (data?.cursor?.total) ?? (Array.isArray((data as any)?.data) ? (data as any).data.length : ((data as any)?.cards?.length ?? 0));
+              alert(`Контент: total=${total ?? '—'}`);
+            } catch (e: any) {
+              const msg = e?.response?.data?.error ?? e?.message ?? 'Не удалось получить карточки из Контента';
+              alert(String(msg).slice(0, 800));
             }
           }}>Проверить карточки (Контент)</button>
         </div>
