@@ -832,7 +832,7 @@ const App = () => {
         <div className="app__header-content">
           <h1>Marketplace Helper</h1>
           <p>Рабочее место менеджера по маркетплейсам.</p>
-          {!isAccountsPage && sellerInfo && (
+          {!isAccountsPage && !mockMode && sellerInfo && (
             <div className="seller-badge">
               <span className="badge">
                 {(() => {
