@@ -18,7 +18,19 @@ export default function Accounts() {
       setHasToken(Boolean((data as any)?.hasToken));
       const mock = await axios.get('/api/v2/wb-api/mock-mode');
       const isMockEnabled = Boolean((mock.data as any)?.mock);
-      setMockEnabled(isMockEnabled);
+      
+      // Auto-disable mock mode when returning to Accounts page
+      if (isMockEnabled) {
+        try {
+          await axios.post('/api/v2/wb-api/mock-mode?enabled=false');
+          setMockEnabled(false);
+        } catch (e) {
+          console.error('Failed to disable mock mode', e);
+          setMockEnabled(isMockEnabled);
+        }
+      } else {
+        setMockEnabled(false);
+      }
       
       // Only fetch seller info if token exists AND mock is disabled
       if ((data as any)?.hasToken && !isMockEnabled) {
