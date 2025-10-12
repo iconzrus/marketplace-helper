@@ -257,4 +257,33 @@ public class WbProductController {
                     .body(Map.of("error", "Ошибка при получении товаров из WB API: " + e.getMessage()));
         }
     }
+
+    /**
+     * Получить список карточек из Контент API (для подтверждения наличия ассортимента)
+     */
+    @PostMapping("/wb-api/content/cards")
+    public ResponseEntity<?> getContentCards(@RequestParam(required = false) Integer limit,
+                                             @RequestParam(required = false) Integer offset) {
+        try {
+            Map<String, Object> result = wbApiService.getContentCardsList(limit, offset);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Ошибка при получении карточек: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Получить цены по списку nmID-ов (через POST /api/v2/list/goods/filter)
+     */
+    @PostMapping("/wb-api/prices/by-nmids")
+    public ResponseEntity<?> getPricesByNmIds(@RequestBody List<Long> nmIds) {
+        try {
+            List<Map<String, Object>> items = wbApiService.getPricesByNmIds(nmIds);
+            return ResponseEntity.ok(items);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Ошибка при получении цен: " + e.getMessage()));
+        }
+    }
 }

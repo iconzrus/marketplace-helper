@@ -176,6 +176,76 @@ public class WbApiService {
         }
     }
 
+    public Map<String, Object> getContentCardsList(Integer limit, Integer offset) {
+        if (shouldUseMock()) {
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("mock", true);
+            response.put("message", "Контент API не вызывается в mock-режиме");
+            response.put("data", List.of());
+            return response;
+        }
+
+        try {
+            String url = "https://content-api.wildberries.ru/content/v2/get/cards/list";
+
+            Map<String, Object> cursor = new LinkedHashMap<>();
+            cursor.put("limit", limit == null ? 1000 : limit);
+            if (offset != null) cursor.put("offset", offset);
+
+            Map<String, Object> settings = new LinkedHashMap<>();
+            settings.put("cursor", cursor);
+
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("settings", settings);
+
+            org.springframework.http.HttpEntity<Map<String, Object>> entity =
+                    new org.springframework.http.HttpEntity<>(body);
+
+            ResponseEntity<Map<String, Object>> response = wbRestTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            return response.getBody();
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка при получении карточек из Контент API: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Map<String, Object>> getPricesByNmIds(List<Long> nmIds) {
+        if (shouldUseMock()) {
+            return loadMockProducts();
+        }
+        if (nmIds == null || nmIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            String url = wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/filter";
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("nmIDs", nmIds);
+            org.springframework.http.HttpEntity<Map<String, Object>> entity =
+                    new org.springframework.http.HttpEntity<>(body);
+
+            ResponseEntity<Map<String, Object>> response = wbRestTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            Map<String, Object> map = response.getBody();
+            if (map == null) return Collections.emptyList();
+            Object data = map.get("data");
+            if (data instanceof List<?> list) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
+                return casted;
+            }
+            return Collections.emptyList();
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка при получении цен по nmIDs: " + e.getMessage(), e);
+        }
+    }
     public void syncProductsFromWbApi() {
         try {
             List<Map<String, Object>> wbProducts = getGoodsWithPrices();

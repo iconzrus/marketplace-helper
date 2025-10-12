@@ -39,6 +39,15 @@ export default function WbCatalog() {
           <input placeholder="Мин. скидка, %" inputMode="numeric" value={ctx.minDiscount} onChange={e => ctx.setMinDiscount(e.target.value)} style={{ width: 130 }} />
           <button className="btn btn--secondary" onClick={ctx.fetchWbProducts} disabled={ctx.loadingWb}>{ctx.loadingWb ? 'Обновление…' : 'Обновить товары'}</button>
           <button className="btn" onClick={ctx.handleSyncWb}>Синхронизировать с WB</button>
+          <button className="btn" onClick={async () => {
+            try {
+              const { data } = await axios.post('/api/v2/wb-api/content/cards');
+              const total = Array.isArray((data as any)?.data) ? (data as any).data.length : ((data as any)?.cards?.length ?? 0);
+              alert(`Контент: получено ${total} карточек (первые ${Math.min(total, 1000)} в ответе).`);
+            } catch (e) {
+              alert('Не удалось получить карточки из Контента');
+            }
+          }}>Проверить карточки (Контент)</button>
         </div>
       </div>
       <div className="table-wrapper">
