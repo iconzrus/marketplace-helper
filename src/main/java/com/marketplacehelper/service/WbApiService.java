@@ -56,7 +56,7 @@ public class WbApiService {
         }
 
         try {
-            String url = wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/full";
+            String url = wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/filter";
             ResponseEntity<List<Map<String, Object>>> response = wbRestTemplate.exchange(
                     url,
                     HttpMethod.GET,
