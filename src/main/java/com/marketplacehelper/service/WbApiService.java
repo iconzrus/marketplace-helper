@@ -56,7 +56,7 @@ public class WbApiService {
         }
 
         try {
-            String url = wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/filter";
+            String url = wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/filter?limit=1000&offset=0";
             ResponseEntity<List<Map<String, Object>>> response = wbRestTemplate.exchange(
                     url,
                     HttpMethod.GET,
@@ -81,7 +81,7 @@ public class WbApiService {
         }
 
         try {
-            StringBuilder urlBuilder = new StringBuilder(wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/full");
+            StringBuilder urlBuilder = new StringBuilder(wbApiConfig.getWbApiBaseUrl() + "/api/v2/list/goods/filter");
             if (filters != null && !filters.isEmpty()) {
                 urlBuilder.append("?");
                 boolean first = true;
