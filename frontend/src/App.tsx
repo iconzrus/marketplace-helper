@@ -596,6 +596,30 @@ const App = () => {
   };
 
   const runDemoAutofill = async () => {
+    // Автозаполнение расходов для существующих товаров
+    if (!authToken) return;
+    setDemoActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const { data } = await axios.post('/api/demo/autofill-costs', {
+        limit: 500,
+        overwriteAll: false
+      });
+      await fetchAnalytics();
+      await fetchValidation();
+      setMessage(`Автозаполнены расходы для ${data?.affectedCount ?? 0} товаров.`);
+    } catch (err) {
+      console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) return;
+      setError('Не удалось автозаполнить расходы.');
+    } finally {
+      setDemoActionLoading(false);
+    }
+  };
+
+  const generateMockCabinet = async () => {
+    // Генерация нового mock-кабинета (удаляет старые товары и создаёт новые)
     if (!authToken) return;
     setDemoActionLoading(true);
     setMessage(null);
@@ -614,11 +638,6 @@ const App = () => {
     } finally {
       setDemoActionLoading(false);
     }
-  };
-
-  const generateMockCabinet = async () => {
-    // отдельная явная кнопка может использовать этот метод
-    return runDemoAutofill();
   };
 
   const runDemoGenerate = async () => {
@@ -862,6 +881,7 @@ const App = () => {
                 Логин
               </label>
               <input 
+                type="text"
                 value={login} 
                 onChange={event => setLogin(event.target.value)} 
                 autoComplete="username" 
