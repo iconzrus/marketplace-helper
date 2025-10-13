@@ -712,6 +712,24 @@ public class WbApiService {
         }
         if (data.get("sizes") != null) {
             product.setSizes(data.get("sizes").toString());
+            // Если цены вложены в sizes[], вытащим первую
+            if ((product.getPrice() == null || product.getPrice().signum() == 0)
+                    || product.getPriceWithDiscount() == null || product.getSalePrice() == null) {
+                Object sizes = data.get("sizes");
+                if (sizes instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> s0 = (Map<String, Object>) list.get(0);
+                    if (product.getPrice() == null && s0.get("price") != null) {
+                        product.setPrice(new BigDecimal(s0.get("price").toString()));
+                    }
+                    if (product.getPriceWithDiscount() == null && s0.get("discountedPrice") != null) {
+                        product.setPriceWithDiscount(new BigDecimal(s0.get("discountedPrice").toString()));
+                    }
+                    if (product.getSalePrice() == null && s0.get("discountedPrice") != null) {
+                        product.setSalePrice(new BigDecimal(s0.get("discountedPrice").toString()));
+                    }
+                }
+            }
         }
         return product;
     }
@@ -734,6 +752,19 @@ public class WbApiService {
         }
         if (data.get("total_quantity") != null) {
             existingProduct.setTotalQuantity(Integer.valueOf(data.get("total_quantity").toString()));
+        }
+        if (data.get("sizes") instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> s0 = (Map<String, Object>) list.get(0);
+            if (existingProduct.getPrice() == null && s0.get("price") != null) {
+                existingProduct.setPrice(new BigDecimal(s0.get("price").toString()));
+            }
+            if (existingProduct.getPriceWithDiscount() == null && s0.get("discountedPrice") != null) {
+                existingProduct.setPriceWithDiscount(new BigDecimal(s0.get("discountedPrice").toString()));
+            }
+            if (existingProduct.getSalePrice() == null && s0.get("discountedPrice") != null) {
+                existingProduct.setSalePrice(new BigDecimal(s0.get("discountedPrice").toString()));
+            }
         }
         existingProduct.setUpdatedAt(java.time.LocalDateTime.now());
     }
