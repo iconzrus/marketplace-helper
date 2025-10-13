@@ -79,13 +79,13 @@ public class WbApiService {
                 if (lg instanceof List<?> list) {
                     @SuppressWarnings("unchecked")
                     List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
-                    return casted;
+                    return casted.stream().map(this::normalizeDiscountsPricesItem).collect(Collectors.toList());
                 }
             }
             if (data instanceof List<?> list) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
-                return casted;
+                return casted.stream().map(this::normalizeDiscountsPricesItem).collect(Collectors.toList());
             }
             return Collections.emptyList();
         } catch (Exception e) {
@@ -135,13 +135,13 @@ public class WbApiService {
                 if (lg instanceof List<?> list) {
                     @SuppressWarnings("unchecked")
                     List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
-                    return casted;
+                    return casted.stream().map(this::normalizeDiscountsPricesItem).collect(Collectors.toList());
                 }
             }
             if (data instanceof List<?> list) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
-                return casted;
+                return casted.stream().map(this::normalizeDiscountsPricesItem).collect(Collectors.toList());
             }
             return Collections.emptyList();
         } catch (Exception e) {
@@ -767,5 +767,40 @@ public class WbApiService {
             }
         }
         existingProduct.setUpdatedAt(java.time.LocalDateTime.now());
+    }
+
+    /**
+     * Нормализует элемент Discounts/Prices: разворачивает sizes[0] и конвертирует *_U суммы из копеек в рубли.
+     */
+    private Map<String, Object> normalizeDiscountsPricesItem(Map<String, Object> item) {
+        Map<String, Object> out = new LinkedHashMap<>(item);
+        // nmID uniform
+        if (!out.containsKey("nm_id") && out.get("nmID") != null) out.put("nm_id", out.get("nmID"));
+        if (!out.containsKey("vendor_code") && out.get("vendorCode") != null) out.put("vendor_code", out.get("vendorCode"));
+
+        // prices from *_U
+        if (out.get("basicPriceU") != null && out.get("price") == null) {
+            out.put("price", new BigDecimal(out.get("basicPriceU").toString()).divide(new BigDecimal("100")));
+        }
+        if (out.get("salePriceU") != null && out.get("sale_price") == null) {
+            out.put("sale_price", new BigDecimal(out.get("salePriceU").toString()).divide(new BigDecimal("100")));
+        }
+
+        // from sizes[0]
+        Object sizes = out.get("sizes");
+        if (sizes instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> s0 = (Map<String, Object>) list.get(0);
+            if (out.get("price") == null && s0.get("price") != null) {
+                out.put("price", new BigDecimal(s0.get("price").toString()));
+            }
+            if (out.get("price_with_discount") == null && s0.get("discountedPrice") != null) {
+                out.put("price_with_discount", new BigDecimal(s0.get("discountedPrice").toString()));
+            }
+            if (out.get("sale_price") == null && s0.get("discountedPrice") != null) {
+                out.put("sale_price", new BigDecimal(s0.get("discountedPrice").toString()));
+            }
+        }
+        return out;
     }
 }
