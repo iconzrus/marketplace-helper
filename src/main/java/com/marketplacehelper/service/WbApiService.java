@@ -621,6 +621,8 @@ public class WbApiService {
         WbProduct product = new WbProduct();
         if (data.get("nm_id") != null) {
             product.setNmId(Long.valueOf(data.get("nm_id").toString()));
+        } else if (data.get("nmID") != null) {
+            product.setNmId(Long.valueOf(data.get("nmID").toString()));
         }
         if (data.get("name") != null) {
             product.setName(data.get("name").toString());
@@ -630,42 +632,71 @@ public class WbApiService {
         }
         if (data.get("vendor_code") != null) {
             product.setVendorCode(data.get("vendor_code").toString());
+        } else if (data.get("vendorCode") != null) {
+            product.setVendorCode(data.get("vendorCode").toString());
         }
         if (data.get("price") != null) {
             product.setPrice(new BigDecimal(data.get("price").toString()));
+        } else if (data.get("priceU") != null) {
+            // Цены у WB часто в копейках с суффиксом U
+            product.setPrice(new BigDecimal(data.get("priceU").toString()).divide(new BigDecimal("100")));
+        } else if (data.get("basicPriceU") != null) {
+            product.setPrice(new BigDecimal(data.get("basicPriceU").toString()).divide(new BigDecimal("100")));
         }
         if (data.get("discount") != null) {
             product.setDiscount(Integer.valueOf(data.get("discount").toString()));
         }
         if (data.get("price_with_discount") != null) {
             product.setPriceWithDiscount(new BigDecimal(data.get("price_with_discount").toString()));
+        } else if (data.get("priceWithDiscount") != null) {
+            product.setPriceWithDiscount(new BigDecimal(data.get("priceWithDiscount").toString()));
+        } else if (data.get("salePriceU") != null) {
+            product.setPriceWithDiscount(new BigDecimal(data.get("salePriceU").toString()).divide(new BigDecimal("100")));
         }
         if (data.get("sale_price") != null) {
             product.setSalePrice(new BigDecimal(data.get("sale_price").toString()));
+        } else if (data.get("salePrice") != null) {
+            product.setSalePrice(new BigDecimal(data.get("salePrice").toString()));
+        } else if (data.get("salePriceU") != null) {
+            product.setSalePrice(new BigDecimal(data.get("salePriceU").toString()).divide(new BigDecimal("100")));
         }
         if (data.get("sale") != null) {
             product.setSale(Integer.valueOf(data.get("sale").toString()));
         }
         if (data.get("basic_sale") != null) {
             product.setBasicSale(Integer.valueOf(data.get("basic_sale").toString()));
+        } else if (data.get("basicSale") != null) {
+            product.setBasicSale(Integer.valueOf(data.get("basicSale").toString()));
         }
         if (data.get("basic_price_u") != null) {
             product.setBasicPriceU(new BigDecimal(data.get("basic_price_u").toString()));
+        } else if (data.get("basicPriceU") != null) {
+            product.setBasicPriceU(new BigDecimal(data.get("basicPriceU").toString()).divide(new BigDecimal("100")));
         }
         if (data.get("total_quantity") != null) {
             product.setTotalQuantity(Integer.valueOf(data.get("total_quantity").toString()));
+        } else if (data.get("totalQuantity") != null) {
+            product.setTotalQuantity(Integer.valueOf(data.get("totalQuantity").toString()));
         }
         if (data.get("quantity_not_in_orders") != null) {
             product.setQuantityNotInOrders(Integer.valueOf(data.get("quantity_not_in_orders").toString()));
+        } else if (data.get("quantityNotInOrders") != null) {
+            product.setQuantityNotInOrders(Integer.valueOf(data.get("quantityNotInOrders").toString()));
         }
         if (data.get("quantity_full") != null) {
             product.setQuantityFull(Integer.valueOf(data.get("quantity_full").toString()));
+        } else if (data.get("quantityFull") != null) {
+            product.setQuantityFull(Integer.valueOf(data.get("quantityFull").toString()));
         }
         if (data.get("in_way_to_client") != null) {
             product.setInWayToClient(Integer.valueOf(data.get("in_way_to_client").toString()));
+        } else if (data.get("inWayToClient") != null) {
+            product.setInWayToClient(Integer.valueOf(data.get("inWayToClient").toString()));
         }
         if (data.get("in_way_from_client") != null) {
             product.setInWayFromClient(Integer.valueOf(data.get("in_way_from_client").toString()));
+        } else if (data.get("inWayFromClient") != null) {
+            product.setInWayFromClient(Integer.valueOf(data.get("inWayFromClient").toString()));
         }
         if (data.get("category") != null) {
             product.setCategory(data.get("category").toString());
