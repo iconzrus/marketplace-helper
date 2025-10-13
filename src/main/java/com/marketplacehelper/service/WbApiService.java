@@ -73,6 +73,15 @@ public class WbApiService {
                 return Collections.emptyList();
             }
             Object data = body.get("data");
+            // New shape: { "data": { "listGoods": [...] }, ... }
+            if (data instanceof Map<?, ?> m) {
+                Object lg = ((Map<?, ?>) m).get("listGoods");
+                if (lg instanceof List<?> list) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
+                    return casted;
+                }
+            }
             if (data instanceof List<?> list) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
@@ -121,6 +130,14 @@ public class WbApiService {
                 return Collections.emptyList();
             }
             Object data = body.get("data");
+            if (data instanceof Map<?, ?> m) {
+                Object lg = ((Map<?, ?>) m).get("listGoods");
+                if (lg instanceof List<?> list) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
+                    return casted;
+                }
+            }
             if (data instanceof List<?> list) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> casted = (List<Map<String, Object>>) (List<?>) list;
